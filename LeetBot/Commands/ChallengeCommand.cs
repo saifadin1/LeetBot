@@ -105,7 +105,7 @@ namespace LeetBot.Commands
                 var myChannel = (SocketTextChannel)channel;
 
                 var thread = await myChannel.CreateThreadAsync(
-                    name: $"Challenge from {command.User.Username}",
+                    name: $"{difficulty} {(topic is not null ? topic : "random")} from {command.User.Username}",
                     autoArchiveDuration: ThreadArchiveDuration.OneHour
                 );
 

@@ -62,7 +62,7 @@ namespace LeetBot.ComponentHandlers
                         msg.Components = new ComponentBuilder().Build();
                     });
 
-                    await threadChannel.DeleteAsync();
+                    //await threadChannel.DeleteAsync();
                 }
                 else
                 {
