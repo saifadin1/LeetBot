@@ -34,7 +34,7 @@ namespace LeetBot.Commands
                     .AddChoice("Hard", "hard")
                 )
                 .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("Topic")
+                    .WithName("topic")
                     .WithDescription("select a topic optionally")
                     .WithType(ApplicationCommandOptionType.String)
                     .WithRequired(false)
@@ -58,6 +58,8 @@ namespace LeetBot.Commands
                     .AddChoice("Database", "database")
                     .AddChoice("Shortest path", "shortest-path")
                     .AddChoice("Prefix sum", "prefix-sum")
+                    .AddChoice("Sliding Window", "sliding-window")
+                    .AddChoice("Two Pointers", "two-pointers")
                 );
         }
 
