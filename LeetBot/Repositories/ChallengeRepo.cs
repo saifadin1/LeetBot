@@ -20,7 +20,7 @@ namespace LeetBot.Repositories
         {
             _dbContext = dbContext;
         }
-        public async Task CreateChallengAsync(IDiscordInteraction interaction, RestUserMessage message, string difficulty)
+        public async Task CreateChallengAsync(IDiscordInteraction interaction, RestUserMessage message, string difficulty, string? topic)
         {
             //var message = await interaction.GetOriginalResponseAsync();
             var userId = interaction.User.Id;
@@ -31,6 +31,7 @@ namespace LeetBot.Repositories
                 ChallengerId = $"{userId}-{interaction.GuildId}",
                 Difficulty = difficulty,
                 GuildId = interaction.GuildId,
+                Topic = topic,
             };
 
             await _dbContext.Challenges.AddAsync(challenge);

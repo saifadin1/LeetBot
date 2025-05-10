@@ -11,6 +11,7 @@ namespace LeetBot.Models
         public ulong Id { get; set; }
         public string? TitleSlug { get; set; }
         public string? Difficulty { get; set; }
+        public string? Topic { get; set; }   // this might be List in future 
         public string? ProblemLink { get; set; }
         public string? ChallengerId { get; set; }
         public User? Challenger { get; set; }

@@ -14,7 +14,7 @@ namespace LeetBot.Interfaces
     internal interface ILeetCodeService
     {
         Task<string> GetUserRealNameAsync(string username);
-        Task<string> GetRandomProblemAsync(string difficulty);
+        Task<string> GetRandomProblemAsync(string difficulty, string? topic);
         Task<UserLastSubmissionDTO> GetUserSubmissionsAsync(string username);
         Task<List<(int, string)>> GetUserProblemSolved(string username);
         Task GetUsersSubmissions(SocketMessageComponent component, Challenge challenge, SocketThreadChannel threadChannel);
