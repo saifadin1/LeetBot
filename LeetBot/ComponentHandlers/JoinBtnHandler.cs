@@ -62,9 +62,10 @@ namespace LeetBot.ComponentHandlers
             }
 
             var difficulty = challenge.Difficulty;
+            var topic = challenge.Topic;
 
             // get a random problem from leetcode tages with difficulty
-            var slug = await _leetCodeService.GetRandomProblemAsync(difficulty);
+            var slug = await _leetCodeService.GetRandomProblemAsync(difficulty, topic);
 
 
             challenge.OpponentId = $"{component.User.Id}-{component.GuildId}";
@@ -79,6 +80,7 @@ namespace LeetBot.ComponentHandlers
                 .WithDescription($"⚔️ {component.User.Mention} has accepted the challenge! \n\n" +
                 $"**Problem:** [LeetCode Problem](https://leetcode.com/problems/{slug}) \n" +
                 $"**Difficulty:** {difficulty} \n" +
+                $"**Topic:** {(topic is not null ? topic : "Random")} \n" +
                 $"**Challenger:** {challenge.Challenger.Mention} \n" +
                 $"**Opponent:** {component.User.Mention} \n"
                 );

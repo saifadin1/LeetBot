@@ -73,7 +73,7 @@ namespace LeetBot.Services
             return data.data.matchedUser.profile.realName.ToString();
         }
 
-        public async Task<string> GetRandomProblemAsync(string difficulty)
+        public async Task<string> GetRandomProblemAsync(string difficulty, string? topic)
         {
             difficulty = difficulty.ToUpper();
 
@@ -114,7 +114,7 @@ namespace LeetBot.Services
                         },
                         topicFilter = new
                         {
-                            topicSlugs = Array.Empty<string>()
+                            topicSlugs = topic is not null ? new[] { topic } : Array.Empty<string>()
                         },
                         companyFilter = new
                         {

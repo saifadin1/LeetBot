@@ -13,7 +13,7 @@ namespace LeetBot.Interfaces;
 
 internal interface IChallengeRepo
 {
-    Task CreateChallengAsync(IDiscordInteraction interaction, RestUserMessage message, string difficulty);
+    Task CreateChallengAsync(IDiscordInteraction interaction, RestUserMessage message, string difficulty, string? topic);
     Task<Challenge> GetChallengeById(ulong id);
     Task<bool> IsUserChallenging(IDiscordInteraction interaction);
     Task<int> SaveChangesAsync();

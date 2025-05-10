@@ -32,12 +32,42 @@ namespace LeetBot.Commands
                     .AddChoice("Easy", "easy")
                     .AddChoice("Medium", "medium")
                     .AddChoice("Hard", "hard")
+                )
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("topic")
+                    .WithDescription("select a topic optionally")
+                    .WithType(ApplicationCommandOptionType.String)
+                    .WithRequired(false)
+                    // max number of choices is 25
+                    .AddChoice("Array", "array")
+                    .AddChoice("String", "string")
+                    .AddChoice("Dynamic Programming", "dynamic-programming")
+                    .AddChoice("Binary Search", "binary-search")
+                    .AddChoice("Backtracking", "backtracking")
+                    .AddChoice("Greedy", "greedy")
+                    .AddChoice("Graph", "graph")
+                    .AddChoice("Tree", "tree")
+                    .AddChoice("Linked List", "linked-list")
+                    .AddChoice("Heap", "heap")
+                    .AddChoice("Hash Table", "hash-table")
+                    .AddChoice("Recursion", "recursion")
+                    .AddChoice("Sorting", "sorting")
+                    .AddChoice("Bit Manipulation", "bit-manipulation")
+                    .AddChoice("Math", "math")
+                    .AddChoice("numbertheory", "number-theory")
+                    .AddChoice("Database", "database")
+                    .AddChoice("Shortest path", "shortest-path")
+                    .AddChoice("Prefix sum", "prefix-sum")
+                    .AddChoice("Sliding Window", "sliding-window")
+                    .AddChoice("Two Pointers", "two-pointers")
                 );
         }
 
         public async Task ExecuteAsync(SocketSlashCommand command, ISocketMessageChannel channel)
         {
             var difficulty = command.Data.Options.First().Value.ToString();
+            var topic = command.Data.Options.FirstOrDefault(x => x.Name == "topic")?.Value?.ToString();
+
             //var titleSlug = await _leetCodeService.GetRandomProblemAsync(difficulty);
             var userId = command.User.Id;
 
@@ -60,7 +90,7 @@ namespace LeetBot.Commands
             // rich embed
             var embed = new EmbedBuilder()
                 .WithColor(Color.Blue)
-                .WithDescription($"⚡ {command.User.Mention} is calling out a challenger for a {difficulty} duel!")
+                .WithDescription($"⚡ {command.User.Mention} is calling out a challenger for a **{difficulty} {topic ?? "random"}** duel!")
                 .WithFooter("Click the button to accept the challenge.");
 
             // button
@@ -75,7 +105,7 @@ namespace LeetBot.Commands
                 var myChannel = (SocketTextChannel)channel;
 
                 var thread = await myChannel.CreateThreadAsync(
-                    name: $"Challenge from {command.User.Username}",
+                    name: $"{difficulty} {(topic is not null ? topic : "random")} from {command.User.Username}",
                     autoArchiveDuration: ThreadArchiveDuration.OneHour
                 );
 
@@ -89,7 +119,7 @@ namespace LeetBot.Commands
                 await Task.Delay(1500);
                 await command.DeleteOriginalResponseAsync();
 
-                await _ChallengeRepo.CreateChallengAsync(command, message, difficulty);
+                await _ChallengeRepo.CreateChallengAsync(command, message, difficulty, topic);
             }
             catch (Exception ex)
             {
