@@ -66,7 +66,7 @@ namespace LeetBot.Commands
         public async Task ExecuteAsync(SocketSlashCommand command, ISocketMessageChannel channel)
         {
             var difficulty = command.Data.Options.First().Value.ToString();
-            var topic = command.Data.Options.FirstOrDefault(x => x.Name == "Topic")?.Value?.ToString();
+            var topic = command.Data.Options.FirstOrDefault(x => x.Name == "topic")?.Value?.ToString();
 
             //var titleSlug = await _leetCodeService.GetRandomProblemAsync(difficulty);
             var userId = command.User.Id;
