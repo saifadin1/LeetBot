@@ -32,5 +32,8 @@ namespace LeetBot.Models
         public Team? Team { get; set; }
 
 
+        public bool IsFree { get; set; } = true;
+
+
     }
 }

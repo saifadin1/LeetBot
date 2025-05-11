@@ -48,7 +48,7 @@ namespace LeetBot.Commands
         {
             await command.DeferAsync();
 
-            var LeetCodeUsername = command.Data.Options
+            var LeetCodeUsername = command.Data.Options 
                 .FirstOrDefault(x => x.Name == "leetcode_id")?.Value?.ToString();
 
             if (string.IsNullOrWhiteSpace(LeetCodeUsername))
@@ -59,7 +59,7 @@ namespace LeetBot.Commands
 
             var randomId = GenerateRandomId(4);
 
-            var isExistingUser = await _userRepo.IsUserExist(command);
+            var isExistingUser = await _userRepo.IsUserExistAsync(command);
             if (isExistingUser)
             {
                 await command.FollowupAsync("You are already verified.");

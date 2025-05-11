@@ -72,7 +72,7 @@ namespace LeetBot.Commands
             var userId = command.User.Id;
 
             // Check if the user is verified
-            var existingUser = await _userRepo.IsUserExist(command);
+            var existingUser = await _userRepo.IsUserExistAsync(command);
             if (existingUser == false)
             {
                 await command.RespondAsync("You need to verify yourself first using the /identify command.");
@@ -80,14 +80,15 @@ namespace LeetBot.Commands
             }
 
             // check if the user is already in a challenge
-            var isChallenging = await _ChallengeRepo.IsUserChallenging(command);
-            if (isChallenging)
+            if (! await _userRepo.IsUserFreeAsync(command))
             {
-                await command.RespondAsync("You are already in a challenge.");
+                await command.RespondAsync("You are already in a challenge.", ephemeral: true);
                 return;
             }
+            
+            await _userRepo.LockUserAsync(command);
 
-            // rich embed
+
             var embed = new EmbedBuilder()
                 .WithColor(Color.Blue)
                 .WithDescription($"⚡ {command.User.Mention} is calling out a challenger for a **{difficulty} {topic ?? "random"}** duel!")
