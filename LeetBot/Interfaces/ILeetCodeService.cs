@@ -1,17 +1,10 @@
-﻿using Discord;
-using Discord.Rest;
-using Discord.WebSocket;
-using LeetBot.DTOs;
+﻿using Discord.WebSocket;
+using LeetBot.DTOs; 
 using LeetBot.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LeetBot.Interfaces
 {
-    internal interface ILeetCodeService
+    public interface ILeetCodeService
     {
         Task<string> GetUserRealNameAsync(string username);
         Task<string> GetRandomProblemAsync(string difficulty, string? topic);
@@ -21,3 +14,7 @@ namespace LeetBot.Interfaces
         //Task MonitorChallengeAsync(SocketMessageComponent component, Challenge challenge, SocketThreadChannel threadChannel, CancellationToken cancellationToken);
     }
 }
+
+
+// get the last sub for every user in the challenge 
+// and compare the submission time then update the scores according to diff btn

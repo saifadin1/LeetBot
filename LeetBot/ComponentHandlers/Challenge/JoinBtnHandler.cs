@@ -3,7 +3,7 @@ using Discord.WebSocket;
 using LeetBot.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace LeetBot.ComponentHandlers
+namespace LeetBot.ComponentHandlers.Challenge
 {
     internal class JoinBtnHandler : IComponentHandler
     {
@@ -36,7 +36,7 @@ namespace LeetBot.ComponentHandlers
             var challengeId = interaction.Message.Id;
 
             // check if this user verifed
-            var existingUser = await _userRepo.IsUserExist(component);
+            var existingUser = await _userRepo.IsUserExistAsync(component);
 
             if (existingUser == false)
             {
@@ -45,12 +45,13 @@ namespace LeetBot.ComponentHandlers
             }
 
             // check if user is already in challenge 
-            var isChallenging = await _challengeRepo.IsUserChallenging(component);
-            if (isChallenging)
+            if (!await _userRepo.IsUserFreeAsync(component))
             {
                 await component.RespondAsync("You are already in a challenge.", ephemeral: true);
                 return;
             }
+
+            await _userRepo.LockUserAsync(component);
 
 
             var challenge = await _challengeRepo.GetChallengeById(challengeId);

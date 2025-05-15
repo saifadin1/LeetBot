@@ -14,7 +14,10 @@ namespace LeetBot.Data
     {
         public DbSet<User> Users => Set<User>();
         public DbSet<Challenge> Challenges => Set<Challenge>();
-        
+        public DbSet<TeamChallenge> TeamChallenges => Set<TeamChallenge>();
+        public DbSet<Team> Teams => Set<Team>();
+
+
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
@@ -47,6 +50,22 @@ namespace LeetBot.Data
                       .WithOne()
                       .HasForeignKey<Challenge>(c => c.OpponentId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<TeamChallenge>(entity =>
+            {
+                entity.HasMany(tc => tc.Teams)
+                      .WithOne(t => t.TeamChallenge)
+                      .HasForeignKey(t => t.ChallengeId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Team>(entity =>
+            {
+                entity.HasMany(t => t.Users)
+                      .WithOne(u => u.Team)
+                      .HasForeignKey(u => u.TeamId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
         }
     }

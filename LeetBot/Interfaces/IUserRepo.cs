@@ -10,11 +10,14 @@ using System.Threading.Tasks;
 
 namespace LeetBot.Interfaces
 {
-    internal interface IUserRepo
+    public interface IUserRepo
     {
         Task<User> CreateUserAsync(IDiscordInteraction interaction);
-        Task<bool> IsUserExist(IDiscordInteraction interaction);
-        Task<List<User>> GetUsersByGuildId(ulong? guildId);
+        Task<bool> IsUserExistAsync(IDiscordInteraction interaction);
+        Task<bool> IsUserFreeAsync(IDiscordInteraction interaction);
+        Task LockUserAsync(IDiscordInteraction interaction);
+        Task<List<User>> GetUsersByGuildIdAsync(ulong? guildId);
+        Task<User?> GetUserByIdAsync(string id);
         Task<int> SaveChangesAsync();
 
     }

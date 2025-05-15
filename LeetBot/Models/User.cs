@@ -25,5 +25,15 @@ namespace LeetBot.Models
 
         public int DifficultyScore => EasyWon + MediumWon * 2 + HardWon * 3;
 
+
+
+        // team stuff
+        public long? TeamId { get; set; }
+        public Team? Team { get; set; }
+
+
+        public bool IsFree { get; set; } = true;
+
+
     }
 }

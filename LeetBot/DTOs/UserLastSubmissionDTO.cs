@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace LeetBot.DTOs
 {
-    internal class UserLastSubmissionDTO : IComparable
+    public class UserLastSubmissionDTO : IComparable
     {
         public string? TitleSlug { get; set; }
         public string? TimeStamp { get; set; }
+        public string LeetCodeUsername { get; set; } = null!;
 
         public int CompareTo(object? obj)
         {

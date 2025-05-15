@@ -48,7 +48,7 @@ namespace LeetBot.Commands
 
         public async Task ExecuteAsync(SocketSlashCommand command, ISocketMessageChannel channel)
         {
-            var usersList = await _userRepo.GetUsersByGuildId(command.GuildId);
+            var usersList = await _userRepo.GetUsersByGuildIdAsync(command.GuildId);
             if (usersList == null || usersList.Count == 0)
             {
                 await command.RespondAsync("No users found.");

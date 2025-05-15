@@ -3,6 +3,7 @@ using System;
 using LeetBot.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LeetBot.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250511102546_TeamChallenge")]
+    partial class TeamChallenge
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -92,47 +95,14 @@ namespace LeetBot.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<string>("EasyProblemTitleSlug")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("EndedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal?>("GuildId")
-                        .HasColumnType("numeric(20,0)");
-
-                    b.Property<string>("HardProblemTitleSlug")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("MediumProblemTitleSlug")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Problem1SolvedByTeam")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Problem2SolvedByTeam")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Problem3SolvedByTeam")
-                        .HasColumnType("integer");
+                    b.Property<long?>("GuildId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("StartedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Team1CurrentScore")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Team1MaxPossibleScore")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Team2CurrentScore")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Team2MaxPossibleScore")
-                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -158,9 +128,6 @@ namespace LeetBot.Migrations
 
                     b.Property<int>("HardWon")
                         .HasColumnType("integer");
-
-                    b.Property<bool>("IsFree")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("LeetCodeUsername")
                         .HasColumnType("text");

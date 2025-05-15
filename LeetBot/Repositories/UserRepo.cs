@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace LeetBot.Repositories
 {
-    internal class UserRepo : IUserRepo
+    public class UserRepo : IUserRepo
     {
         private readonly AppDbContext _dbContext;
         public UserRepo(AppDbContext dbContext)
@@ -32,7 +32,7 @@ namespace LeetBot.Repositories
             return user;
         }
 
-        public async Task<List<User>> GetUsersByGuildId(ulong? guildId)
+        public async Task<List<User>> GetUsersByGuildIdAsync(ulong? guildId)
         {
             var users = await _dbContext.Users
                 .Where(u => u.GuildId == (long)guildId)
@@ -40,10 +40,37 @@ namespace LeetBot.Repositories
             return users;
         }
 
-        public async Task<bool> IsUserExist(IDiscordInteraction interaction)
+        public async Task<bool> IsUserExistAsync(IDiscordInteraction interaction)
         {
             var existingUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == $"{interaction.User.Id}-{interaction.GuildId}");
             return existingUser != null;
+        }
+
+        public async Task<bool> IsUserFreeAsync(IDiscordInteraction interaction)
+        {
+            var user = await _dbContext.Users.FindAsync($"{interaction.User.Id}-{interaction.GuildId}");
+            if (user == null)
+            {
+                return true; // User is free if not found
+            }
+            return user.IsFree;
+        }
+
+        public async Task<User?> GetUserByIdAsync(string id)
+        {
+            var user = await _dbContext.Users.FindAsync(id);
+            return user;
+        }
+
+        public async Task LockUserAsync(IDiscordInteraction interaction)
+        {
+            var userId = $"{interaction.User.Id}-{interaction.GuildId}";
+            var user = await _dbContext.Users.FindAsync(userId);
+            if (user != null)
+            {
+                user.IsFree = false;
+                _dbContext.Users.Update(user);
+            }
         }
 
         public async Task<int> SaveChangesAsync()

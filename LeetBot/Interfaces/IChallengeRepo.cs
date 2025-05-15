@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace LeetBot.Interfaces;
 
-internal interface IChallengeRepo
+public interface IChallengeRepo
 {
     Task CreateChallengAsync(IDiscordInteraction interaction, RestUserMessage message, string difficulty, string? topic);
     Task<Challenge> GetChallengeById(ulong id);

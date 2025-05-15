@@ -1,19 +1,13 @@
 ﻿using Discord;
 using Discord.Rest;
-using Discord.WebSocket;
 using LeetBot.Data;
 using LeetBot.Interfaces;
 using LeetBot.Models;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LeetBot.Repositories
 {
-    internal class ChallengeRepo : IChallengeRepo
+    public class ChallengeRepo : IChallengeRepo
     {
         private readonly AppDbContext _dbContext;
         public ChallengeRepo(AppDbContext dbContext)
