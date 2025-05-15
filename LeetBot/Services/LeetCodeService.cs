@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace LeetBot.Services
 {
-    internal class LeetCodeService : ILeetCodeService
+    public class LeetCodeService : ILeetCodeService
     {
         private readonly HttpClient _httpClient;
         private const string url = "https://leetcode.com/graphql"; 

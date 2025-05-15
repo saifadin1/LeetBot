@@ -17,6 +17,7 @@ namespace LeetBot.Interfaces
         Task<bool> IsUserFreeAsync(IDiscordInteraction interaction);
         Task LockUserAsync(IDiscordInteraction interaction);
         Task<List<User>> GetUsersByGuildIdAsync(ulong? guildId);
+        Task<User?> GetUserByIdAsync(string id);
         Task<int> SaveChangesAsync();
 
     }

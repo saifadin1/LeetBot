@@ -36,6 +36,7 @@ namespace LeetBot
                 .AddScoped<IBot, Bot>()
                 .AddScoped<IdentifyCommand>()
                 .AddScoped<ChallengeCommand>()
+                .AddScoped<TeamChallengeCommand>()
                 .AddScoped<PingCommand>()
                 .AddScoped<LeaderboardCommand>()
                 .AddScoped<LeaveFromChallangCommand>()
@@ -43,21 +44,17 @@ namespace LeetBot
                 .AddScoped<LeaveBtnHandler>()
                 .AddScoped<FinishBtnHandler>()
                 .AddScoped<ILeetCodeService, LeetCodeService>()
+                .AddScoped<ITeamService, TeamService>()
                 .AddScoped<IChallengeRepo, ChallengeRepo>()
                 .AddScoped<IUserRepo, UserRepo>()
+                .AddScoped<ITeamRepo, TeamRepo>()
+                .AddScoped<ITeamChallengeRepo, TeamChallengeRepo>()
                 .BuildServiceProvider();
 
                 
 
             try
             {
-                // debug appsettings 
-                var config = serviceProvider.GetRequiredService<IConfiguration>();
-                var discordToken = config["Discord:BotToken"];
-                var dbConnectionString = config.GetConnectionString("DefaultConnection");
-
-                Console.WriteLine($"Discord Token: {discordToken}");
-                Console.WriteLine($"DB Connection String: {dbConnectionString}");
                 IBot bot = serviceProvider.GetRequiredService<IBot>();
 
                 try

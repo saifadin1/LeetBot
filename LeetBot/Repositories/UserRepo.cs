@@ -56,6 +56,12 @@ namespace LeetBot.Repositories
             return user.IsFree;
         }
 
+        public async Task<User?> GetUserByIdAsync(string id)
+        {
+            var user = await _dbContext.Users.FindAsync(id);
+            return user;
+        }
+
         public async Task LockUserAsync(IDiscordInteraction interaction)
         {
             var userId = $"{interaction.User.Id}-{interaction.GuildId}";

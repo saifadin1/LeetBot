@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace LeetBot.Interfaces
 {
-    internal interface ILeetCodeService
+    public interface ILeetCodeService
     {
         Task<string> GetUserRealNameAsync(string username);
         Task<string> GetRandomProblemAsync(string difficulty, string? topic);

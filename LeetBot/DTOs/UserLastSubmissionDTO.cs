@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LeetBot.DTOs
 {
-    internal class UserLastSubmissionDTO : IComparable
+    public class UserLastSubmissionDTO : IComparable
     {
         public string? TitleSlug { get; set; }
         public string? TimeStamp { get; set; }

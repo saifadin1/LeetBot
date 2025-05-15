@@ -1,28 +1,29 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using LeetBot.Interfaces;
-using LeetBot.Repositories;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Net.WebRequestMethods;
 
 namespace LeetBot.Commands
 {
     public class TeamChallengeCommand : ISlashCommand
     {
-        public bool isApiCommand { get; set; } = false;
+        public bool isApiCommand { get; set; } = true;
 
         private readonly ILogger<TeamChallengeCommand> _logger;
         private readonly IUserRepo _userRepo;
+        private readonly ITeamRepo _teamRepo;
+        private readonly ITeamChallengeRepo _teamChallengeRepo;
 
-        public TeamChallengeCommand(ILogger<TeamChallengeCommand> logger, IUserRepo userRepo)
+
+        public TeamChallengeCommand(ILogger<TeamChallengeCommand> logger,
+            IUserRepo userRepo,
+            ITeamRepo teamRepo,
+            ITeamChallengeRepo teamChallengeRepo)
         {
             _logger = logger;
             _userRepo = userRepo;
+            _teamRepo = teamRepo;
+            _teamChallengeRepo = teamChallengeRepo;
         }
 
         public SlashCommandBuilder BuildCommand()
@@ -54,7 +55,7 @@ namespace LeetBot.Commands
             var loadingEmoji = ":Loading:";
             var embed = new EmbedBuilder()
                 .WithTitle("Waiting for players...")
-                .WithDescription($"Current Game: 2v2\\n\\n**Team 1:**\\n- {command.User.Mention}\\n- {loadingEmoji}\\n\\n**Team 2:**\\n- {loadingEmoji}\\n- {loadingEmoji}\"")
+                .WithDescription($"{loadingEmoji}")
                 .WithColor(Color.Blue);
 
             var components = new ComponentBuilder()
@@ -83,8 +84,12 @@ namespace LeetBot.Commands
                 await Task.Delay(1500);
                 await command.DeleteOriginalResponseAsync();
 
-                // create new TeamChallenge and new two teams
-
+                var challenge = await _teamChallengeRepo.CreateTeamChallengeAsync(command, message);
+                var firstTeam = await _teamRepo.CreateTeamAsync(challenge.Id);
+                var secondTeam = await _teamRepo.CreateTeamAsync(challenge.Id);
+            
+                var curUser = await _userRepo.GetUserByIdAsync($"{command.User.Id}-{command.GuildId}");
+                await _teamRepo.AddUserToTeamAsync(firstTeam.Id, curUser);
             }
             catch (Exception ex)
             {
