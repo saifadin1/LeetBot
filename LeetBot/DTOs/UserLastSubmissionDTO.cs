@@ -10,6 +10,7 @@ namespace LeetBot.DTOs
     {
         public string? TitleSlug { get; set; }
         public string? TimeStamp { get; set; }
+        public string LeetCodeUsername { get; set; } = null!;
 
         public int CompareTo(object? obj)
         {

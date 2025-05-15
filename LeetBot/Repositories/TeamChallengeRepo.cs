@@ -43,6 +43,7 @@ namespace LeetBot.Repositories
             return await _dbContext.TeamChallenges
                 .Where(tc => tc.GuildId == guildId)
                 .Include(tc => tc.Teams)
+                .ThenInclude(t => t.Users)
                 .ToListAsync();
         }
 

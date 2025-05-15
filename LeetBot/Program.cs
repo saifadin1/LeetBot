@@ -1,5 +1,5 @@
 ﻿using LeetBot.Commands;
-using LeetBot.ComponentHandlers;
+using LeetBot.ComponentHandlers.Challenge;
 using LeetBot.Data;
 using LeetBot.Interfaces;
 using LeetBot.Repositories;

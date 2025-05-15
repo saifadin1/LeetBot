@@ -211,7 +211,8 @@ namespace LeetBot.Services
             var lastSubmission = new UserLastSubmissionDTO()
             {
                 TitleSlug = submissions[0].titleSlug.ToString(),
-                TimeStamp = submissions[0].timestamp.ToString()
+                TimeStamp = submissions[0].timestamp.ToString(),
+                LeetCodeUsername = username
             };
 
             return lastSubmission;
@@ -487,6 +488,8 @@ namespace LeetBot.Services
                 await _challengeRepo.SaveChangesAsync();
         }
             
+
+
 
         public async Task<List<(int, string)>> GetUserProblemSolved(string username)
         {

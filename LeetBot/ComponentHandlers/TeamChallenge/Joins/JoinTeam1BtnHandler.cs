@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LeetBot.ComponentHandlers
+namespace LeetBot.ComponentHandlers.TeamChallenge.Joins
 {
     public class JoinTeam1BtnHandler : IComponentHandler
     {
@@ -36,15 +36,7 @@ namespace LeetBot.ComponentHandlers
 
         public async Task ExecuteAsync(SocketMessageComponent component, SocketThreadChannel threadChannel)
         {
-            int teamNumber = component.Data.CustomId switch
-            {
-                "joinTeam1Btn" => 1,
-                "joinTeam2Btn" => 2,
-                _ => throw new InvalidOperationException("Unknown team button ID")
-            };
-
-
-            await _teamService.HandleJoinTeamAsync(component, teamNumber);
+            await _teamService.HandleJoinTeamAsync(component, 1);
         }
     }
 }

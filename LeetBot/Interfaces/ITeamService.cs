@@ -10,5 +10,6 @@ namespace LeetBot.Interfaces
     public interface ITeamService
     {
         Task HandleJoinTeamAsync(SocketMessageComponent component, int teamNumber);
+        Task HandleDifficultyButton(SocketMessageComponent component, SocketThreadChannel threadChannel, string difficulty);
     }
 }

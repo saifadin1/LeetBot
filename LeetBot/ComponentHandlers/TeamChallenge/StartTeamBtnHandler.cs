@@ -4,7 +4,7 @@ using LeetBot.Helpers;
 using LeetBot.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace LeetBot.ComponentHandlers
+namespace LeetBot.ComponentHandlers.TeamChallenge
 {
     public class StartTeamBtnHandler : IComponentHandler
     {
@@ -79,7 +79,9 @@ namespace LeetBot.ComponentHandlers
                  .WithColor(Color.Blue);
 
             var components = new ComponentBuilder()
-                .WithButton("update", "teamUpdate", ButtonStyle.Primary);
+                .WithButton("Easy", "teamEasy", ButtonStyle.Primary)
+                .WithButton("Medium", "teamMedium", ButtonStyle.Primary)
+                .WithButton("Hard", "teamHard", ButtonStyle.Primary);
 
             await component.ModifyOriginalResponseAsync(msg =>
             {

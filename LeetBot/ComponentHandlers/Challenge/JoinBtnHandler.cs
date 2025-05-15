@@ -3,7 +3,7 @@ using Discord.WebSocket;
 using LeetBot.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace LeetBot.ComponentHandlers
+namespace LeetBot.ComponentHandlers.Challenge
 {
     internal class JoinBtnHandler : IComponentHandler
     {
