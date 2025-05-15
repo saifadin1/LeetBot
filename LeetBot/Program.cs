@@ -48,6 +48,7 @@ namespace LeetBot
                 .AddScoped<JoinTeam1BtnHandler>()
                 .AddScoped<JoinTeam2BtnHandler>()
                 .AddScoped<StartTeamBtnHandler>()
+                .AddScoped<leaveTeamBtnHandler>()
                 .AddScoped<ILeetCodeService, LeetCodeService>()
                 .AddScoped<ITeamService, TeamService>()
                 .AddScoped<IChallengeRepo, ChallengeRepo>()

@@ -57,7 +57,7 @@ namespace LeetBot.Repositories
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task RemoveUserFromTeamAsync(long teamId, User user)
+        public async Task RemoveUserFromTeamAsync(long? teamId, User user)
         {
             var team = await _dbContext.Teams
                 .Include(t => t.Users)
@@ -68,6 +68,8 @@ namespace LeetBot.Repositories
 
             team.Users.Remove(user);
             user.TeamId = null;
+
+
 
             await _dbContext.SaveChangesAsync();
         }
