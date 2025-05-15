@@ -61,7 +61,7 @@ namespace LeetBot.Commands
             var components = new ComponentBuilder()
                 .WithButton("Join Team 1", "joinTeam1Btn")
                 .WithButton("Join Team 2", "joinTeam2Btn")
-                .WithButton("leave", "leaveTeamBtn")
+                //.WithButton("leave", "leaveTeamBtn") 
                 .WithButton("start", "startTeamBtn");
 
             try

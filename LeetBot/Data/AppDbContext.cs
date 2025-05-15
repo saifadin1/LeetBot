@@ -67,6 +67,10 @@ namespace LeetBot.Data
                       .HasForeignKey(u => u.TeamId)
                       .OnDelete(DeleteBehavior.SetNull);
             });
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.IsFree)
+                .HasDefaultValue(true);
         }
     }
 

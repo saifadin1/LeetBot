@@ -36,7 +36,15 @@ namespace LeetBot.ComponentHandlers.TeamChallenge.Joins
 
         public async Task ExecuteAsync(SocketMessageComponent component, SocketThreadChannel threadChannel)
         {
-            await _teamService.HandleJoinTeamAsync(component, 1);
+            try
+            {
+                Console.WriteLine($"JoinTeam1BtnHandler: {component.User.Username} clicked the button");
+                await component.DeferAsync();
+                await _teamService.HandleJoinTeamAsync(component, 1);
+            } catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+            }
         }
     }
 }

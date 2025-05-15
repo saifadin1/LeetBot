@@ -7,9 +7,9 @@
         public DateTime StartedAt { get; set; }
         public DateTime EndedAt { get; set; }
         public ICollection<Team> Teams { get; set; } = new List<Team>();
-        public string EasyProblemTitleSlug { get; set; }
-        public string MediumProblemTitleSlug { get; set; }
-        public string HardProblemTitleSlug { get; set; }
+        public string? EasyProblemTitleSlug { get; set; }
+        public string? MediumProblemTitleSlug { get; set; }
+        public string? HardProblemTitleSlug { get; set; }
         public int Team1CurrentScore { get; set; } = 0;
         public int Team2CurrentScore { get; set; } = 0;
         public int Team1MaxPossibleScore { get; set; } = 600;
