@@ -39,18 +39,18 @@ namespace LeetBot.ComponentHandlers.TeamChallenge
             // validation - this user is the creator of the thread FirstTeam.user.First
             var challengeId = component.Message.Id;
             var teams = await _teamRepo.GetTeamsByChallengeIdAsync((long)challengeId);
-            var creator = teams
-                .FirstOrDefault()?
-                .Users
-                .FirstOrDefault();
+            //var creator = teams
+            //    .FirstOrDefault()?
+            //    .Users
+            //    .FirstOrDefault();
 
             // validation - user is the creator of the thread
 
-            if (creator is null || creator.Id != TextProcessor.UserId(component.User.Id, component.GuildId))
-            {
-                await component.FollowupAsync("Only the creator of the challenge can start it", ephemeral: true);
-                return;
-            }
+            //if (creator is null || creator.Id != TextProcessor.UserId(component.User.Id, component.GuildId))
+            //{
+            //    await component.FollowupAsync("Only the creator of the challenge can start it", ephemeral: true);
+            //    return;
+            //}
 
             // validation - both teams have 2 users
             if (teams.First().Users.Count != 2 && teams.Last().Users.Count != 2)

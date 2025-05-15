@@ -1,4 +1,5 @@
-﻿using Discord.WebSocket;
+﻿using Discord;
+using Discord.WebSocket;
 using LeetBot.ComponentHandlers.TeamChallenge.Joins;
 using LeetBot.DTOs;
 using LeetBot.Interfaces;
@@ -137,23 +138,53 @@ namespace LeetBot.Services
 
             await component.FollowupAsync($"the {difficulty.ToUpper()} problem solved by team {(firstSolverTeam == 1 ? "1️⃣ " : "2️⃣ ")}");
 
+            // check if the challenge is finished
+            if (challenge.Team1CurrentScore >= challenge.Team2MaxPossibleScore)
+            {
+                await threadChannel.SendMessageAsync($"Team 1 wins with score: {challenge.Team1CurrentScore} - {challenge.Team2MaxPossibleScore}");
+                await _teamChallengeRepo.DeleteTeamChallengeAsync(challenge.Id);
+                await component.ModifyOriginalResponseAsync(msg =>
+                {
+                    msg.Embed = new EmbedBuilder()
+                        .WithTitle("Challenge finished")
+                        .WithDescription($"Team 1 wins with score: {challenge.Team1CurrentScore} ")
+                        .WithColor(Color.Green)
+                        .Build();
+                });
+                return;
+            }
+            else if (challenge.Team2CurrentScore >= challenge.Team1MaxPossibleScore)
+            {
+                await threadChannel.SendMessageAsync($"Team 2 wins with score: {challenge.Team2CurrentScore} - {challenge.Team1MaxPossibleScore}");
+                await _teamChallengeRepo.DeleteTeamChallengeAsync(challenge.Id);
+                await component.ModifyOriginalResponseAsync(msg =>
+                {
+                    msg.Embed = new EmbedBuilder()
+                        .WithTitle("Challenge finished")
+                        .WithDescription($"Team 1 wins with score: {challenge.Team1CurrentScore} ")
+                        .WithColor(Color.Green)
+                        .Build();
+                });
+                return;
+            }
         }
 
         public async Task HandleJoinTeamAsync(SocketMessageComponent component, int teamNumber)
         {
-            await component.DeferAsync();
+            Console.WriteLine($"Team number: {teamNumber}");
+
 
             // validation (verified, free)
             bool isVerified = await _userRepo.IsUserExistAsync(component);
             if (!isVerified)
             {
-                await component.RespondAsync("You need to verify yourself first using the /identify command.");
+                await component.FollowupAsync("You need to verify yourself first using the /identify command.");
                 return;
             }
             bool isFree = await _userRepo.IsUserFreeAsync(component);
             if (!isFree)
             {
-                await component.RespondAsync("You are already in a challenge.", ephemeral: true);
+                await component.FollowupAsync("You are already in a challenge.", ephemeral: true);
                 return;
             }
             await _userRepo.LockUserAsync(component);

@@ -3,6 +3,7 @@ using System;
 using LeetBot.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LeetBot.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250515051124_IsFreeDefaultValue")]
+    partial class IsFreeDefaultValue
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -93,6 +96,7 @@ namespace LeetBot.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("EasyProblemTitleSlug")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("EndedAt")
@@ -102,9 +106,11 @@ namespace LeetBot.Migrations
                         .HasColumnType("numeric(20,0)");
 
                     b.Property<string>("HardProblemTitleSlug")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("MediumProblemTitleSlug")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Problem1SolvedByTeam")

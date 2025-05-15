@@ -1,5 +1,7 @@
 ﻿using LeetBot.Commands;
 using LeetBot.ComponentHandlers.Challenge;
+using LeetBot.ComponentHandlers.TeamChallenge;
+using LeetBot.ComponentHandlers.TeamChallenge.Joins;
 using LeetBot.Data;
 using LeetBot.Interfaces;
 using LeetBot.Repositories;
@@ -43,6 +45,9 @@ namespace LeetBot
                 .AddScoped<JoinBtnHandler>()
                 .AddScoped<LeaveBtnHandler>()
                 .AddScoped<FinishBtnHandler>()
+                .AddScoped<JoinTeam1BtnHandler>()
+                .AddScoped<JoinTeam2BtnHandler>()
+                .AddScoped<StartTeamBtnHandler>()
                 .AddScoped<ILeetCodeService, LeetCodeService>()
                 .AddScoped<ITeamService, TeamService>()
                 .AddScoped<IChallengeRepo, ChallengeRepo>()

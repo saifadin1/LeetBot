@@ -98,6 +98,8 @@ namespace LeetBot.ComponentHandlers.Challenge
                 msg.Components = components.Build();
             });
 
+            
+
 
 
             // remove the prev message

@@ -4,6 +4,7 @@ using LeetBot.Data;
 using LeetBot.Interfaces;
 using LeetBot.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -70,6 +71,28 @@ namespace LeetBot.Repositories
             {
                 user.IsFree = false;
                 _dbContext.Users.Update(user);
+                await this.SaveChangesAsync();
+            }
+        }
+        public async Task UnlockUserAsync(IDiscordInteraction interaction)
+        {
+            var userId = $"{interaction.User.Id}-{interaction.GuildId}";
+            var user = await _dbContext.Users.FindAsync(userId);
+            if (user != null)
+            {
+                user.IsFree = true;
+                _dbContext.Users.Update(user);
+                await this.SaveChangesAsync();
+            }
+        }
+        public async Task UnlockUserAsync(string userId)
+        {
+            var user = await _dbContext.Users.FindAsync(userId);
+            if (user != null)
+            {
+                user.IsFree = true;
+                _dbContext.Users.Update(user);
+                await this.SaveChangesAsync();
             }
         }
 
@@ -77,5 +100,6 @@ namespace LeetBot.Repositories
         {
             return await _dbContext.SaveChangesAsync();
         }
+
     }
 }

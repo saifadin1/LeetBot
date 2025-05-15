@@ -14,10 +14,12 @@ namespace LeetBot.Commands
         public bool isApiCommand { get; set; } = false;
 
         private readonly IChallengeRepo _challengeRepo;
+        private readonly IUserRepo _userRepo;
 
-        public LeaveFromChallangCommand(IChallengeRepo challengeRepo)
+        public LeaveFromChallangCommand(IChallengeRepo challengeRepo, IUserRepo userRepo)
         {
             _challengeRepo = challengeRepo;
+            _userRepo = userRepo;
         }
 
         public SlashCommandBuilder BuildCommand()
@@ -29,17 +31,20 @@ namespace LeetBot.Commands
 
         public async Task ExecuteAsync(SocketSlashCommand command, ISocketMessageChannel channel)
         {
-            var challange = await _challengeRepo.GetChallengeByUserId($"{command.User.Id}-{command.GuildId}");
-            if (challange == null)
-            {
-                await command.RespondAsync("You are not in a challenge.", ephemeral: true);
-            } else
-            {
-                await _challengeRepo.RemoveChallenger($"{command.User.Id}-{command.GuildId}");
-                await _challengeRepo.SaveChangesAsync();
+            await _userRepo.UnlockUserAsync(command);
+            await command.RespondAsync("You have left the challenge", ephemeral: true);
+
+            //var challange = await _challengeRepo.GetChallengeByUserId($"{command.User.Id}-{command.GuildId}");
+            //if (challange == null)
+            //{
+            //    await command.RespondAsync("You are not in a challenge.", ephemeral: true);
+            //} else
+            //{
+            //    await _challengeRepo.RemoveChallenger($"{command.User.Id}-{command.GuildId}");
+            //    await _challengeRepo.SaveChangesAsync();
                 
-                await command.RespondAsync("You have left the challenge.", ephemeral: true);
-            }
+            //    await command.RespondAsync("You have left the challenge.", ephemeral: true);
+            //}
         }
     }
 }
