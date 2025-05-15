@@ -15,7 +15,7 @@ namespace LeetBot.Interfaces
         Task<Team?> GetTeamByIdAsync(long teamId);
         Task<List<Team>> GetTeamsByChallengeIdAsync(long challengeId);
         Task AddUserToTeamAsync(long teamId, User user);
-        Task RemoveUserFromTeamAsync(long teamId, User user);
+        Task RemoveUserFromTeamAsync(long? teamId, User user);
         Task DeleteTeamAsync(long teamId);
         Task<int> SaveChangesAsync();
     }
