@@ -42,6 +42,7 @@ namespace LeetBot
                 .AddScoped<PingCommand>()
                 .AddScoped<LeaderboardCommand>()
                 .AddScoped<LeaveFromChallangCommand>()
+                .AddScoped<HelpCommand>()
                 .AddScoped<JoinBtnHandler>()
                 .AddScoped<LeaveBtnHandler>()
                 .AddScoped<FinishBtnHandler>()
