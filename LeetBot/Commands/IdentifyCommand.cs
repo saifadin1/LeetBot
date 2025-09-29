@@ -58,16 +58,21 @@ namespace LeetBot.Commands
             }
 
             var randomId = GenerateRandomId(4);
-
             var isExistingUser = await _userRepo.IsUserExistAsync(command);
+
             if (isExistingUser)
             {
-                await command.FollowupAsync("You are already verified.");
-                return;
+                // User is already verified - show message for username change
+                await command.FollowupAsync("You are already identified.\n" +
+                    "If you want to change it to the new username, please place the new verification code in your LeetCode username (same process as before).");
+            }
+            else
+            {
+                // New user - initial verification
+                await command.FollowupAsync($"Please set your LeetCode real name to this code: `{randomId}` within 1 minute.");
             }
 
-            await command.FollowupAsync($"Please set your LeetCode real name to this code: `{randomId}` within 1 minute.");
-
+            // Wait for verification code in both cases
             var timeout = TimeSpan.FromMinutes(1);
             var delay = TimeSpan.FromSeconds(5);
             var stopwatch = Stopwatch.StartNew();
@@ -88,10 +93,20 @@ namespace LeetBot.Commands
 
                 if (realName?.Trim() == randomId)
                 {
-                    var user = await _userRepo.CreateUserAsync(command);
-                    user.LeetCodeUsername = LeetCodeUsername;
-                    await _userRepo.SaveChangesAsync();
-                    await command.FollowupAsync($"{LeetCodeUsername} has been verified successfully!");
+                    if (isExistingUser)
+                    {
+                        // Update existing user's LeetCode username
+                        await _userRepo.UpdateUserLeetCodeUsernameAsync(command, LeetCodeUsername);
+                        await command.FollowupAsync($"{LeetCodeUsername} has been updated successfully!");
+                    }
+                    else
+                    {
+                        // Create new user
+                        var user = await _userRepo.CreateUserAsync(command);
+                        user.LeetCodeUsername = LeetCodeUsername;
+                        await _userRepo.SaveChangesAsync();
+                        await command.FollowupAsync($"{LeetCodeUsername} has been verified successfully!");
+                    }
                     return;
                 }
 

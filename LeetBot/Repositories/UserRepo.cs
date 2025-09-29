@@ -96,6 +96,19 @@ namespace LeetBot.Repositories
             }
         }
 
+        public async Task UpdateUserLeetCodeUsernameAsync(IDiscordInteraction interaction, string newLeetCodeUsername)
+        {
+            var userId = $"{interaction.User.Id}-{interaction.GuildId}";
+            var user = await _dbContext.Users.FindAsync(userId);
+            if (user != null)
+            {
+                user.LeetCodeUsername = newLeetCodeUsername;
+                user.VerifiedAt = DateTime.UtcNow; // Update verification timestamp
+                _dbContext.Users.Update(user);
+                await this.SaveChangesAsync();
+            }
+        }
+
         public async Task<int> SaveChangesAsync()
         {
             return await _dbContext.SaveChangesAsync();
