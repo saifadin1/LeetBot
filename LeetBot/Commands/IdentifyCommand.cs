@@ -64,7 +64,7 @@ namespace LeetBot.Commands
             {
                 // User is already verified - show message for username change
                 await command.FollowupAsync("You are already identified.\n" +
-                    "If you want to change it to the new username, please place the new verification code in your LeetCode username (same process as before).");
+                    $"If you want to change it to the new username, please place this code: `{randomId}` in your LeetCode username (same process as before).");
             }
             else
             {
