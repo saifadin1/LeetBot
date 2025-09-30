@@ -1,22 +1,26 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using LeetBot.Interfaces;
+using LeetBot.Repositories;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace LeetBot.ComponentHandlers.Challenge
 {
     internal class LeaveBtnHandler : IComponentHandler
     {
         private readonly IChallengeRepo _challengeRepo;
+        private readonly IUserRepo _userRepo;
 
-        public LeaveBtnHandler(IChallengeRepo challengeRepo)
+        public LeaveBtnHandler(IChallengeRepo challengeRepo, IUserRepo userRepo)
         {
             _challengeRepo = challengeRepo;
+            _userRepo = userRepo;
         }
 
         public string CustomId => "leave_btn";
@@ -37,6 +41,7 @@ namespace LeetBot.ComponentHandlers.Challenge
             try
             {
                 await _challengeRepo.RemoveChallenger(userId);
+                await _userRepo.UnlockUserAsync(component);
                 await _challengeRepo.SaveChangesAsync();
 
                 // check if both players left the challenge
@@ -77,9 +82,4 @@ namespace LeetBot.ComponentHandlers.Challenge
         }
     }
 }
-
-
-
-// TODO: 
-// leave command 
 
