@@ -12,7 +12,7 @@ namespace LeetBot
     internal class Bot : IBot
     {
         ILogger<Bot> _logger;
-        private ServiceProvider? _serviceProvider;
+        private IServiceProvider? _serviceProvider;
 
         private readonly IConfiguration _configuration;
         private readonly DiscordSocketClient _client;
@@ -45,7 +45,7 @@ namespace LeetBot
 
         }
 
-        public async Task StartAsync(ServiceProvider services)
+        public async Task StartAsync(IServiceProvider services)
         {
             string discordToken = _configuration["Discord:BotToken"] ?? throw new Exception("Missing Discord token");
 
