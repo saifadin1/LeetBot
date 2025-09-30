@@ -1,4 +1,6 @@
-﻿using LeetBot.Interfaces;
+﻿using LeetBot.Data;
+using LeetBot.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
@@ -22,6 +24,15 @@ namespace LeetBot.Services
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            // Reset all users' IsFree to false
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                await dbContext.Users
+                    .Where(u => u.IsFree == false)
+                    .ExecuteUpdateAsync(s => s.SetProperty(u => u.IsFree, true), cancellationToken);
+            }
+
             await _bot.StartAsync(_serviceProvider);
         }
 
