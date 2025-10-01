@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
 
 env:
-  DOTNET_VERSION: '9.0' 
+  DOTNET_VERSION: '9.0'
   PUBLISH_DIR: publish
 
 jobs:
@@ -20,11 +20,34 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Restore and build
-        run: dotnet restore && dotnet build --no-restore --configuration Release
+      - name: Show repo tree (debug)
+        run: |
+          echo "Listing repo root:"
+          ls -la
+          echo "Listing LeetBot folder:"
+          ls -la LeetBot || true
 
-      - name: Publish
-        run: dotnet publish -c Release -o ${{ env.PUBLISH_DIR }}
+      - name: Restore and build (LeetBot)
+        working-directory: LeetBot
+        run: |
+          # if you have a solution file, prefer restore/build against it:
+          if [ -f "LeetBot.sln" ]; then
+            dotnet restore LeetBot.sln
+            dotnet build LeetBot.sln --configuration Release --no-restore
+          else
+            # fallback to csproj
+            dotnet restore LeetBot.csproj
+            dotnet build LeetBot.csproj --configuration Release --no-restore
+          fi
+
+      - name: Publish (LeetBot)
+        working-directory: LeetBot
+        run: |
+          if [ -f "LeetBot.sln" ]; then
+            dotnet publish LeetBot.sln -c Release -o ${{ env.PUBLISH_DIR }}
+          else
+            dotnet publish LeetBot.csproj -c Release -o ${{ env.PUBLISH_DIR }}
+          fi
 
       - name: Prepare SSH key
         env:
@@ -33,7 +56,6 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # optionally disable strict host key checking for simpler setup (or add host to known_hosts)
           printf "Host *\n  StrictHostKeyChecking no\n" >> ~/.ssh/config
           chmod 600 ~/.ssh/config
 
@@ -44,9 +66,7 @@ jobs:
           PORT: ${{ secrets.EC2_PORT || '22' }}
           APP_DIR: ${{ secrets.APP_DIR || '/home/${{ secrets.EC2_USER }}/myapp' }}
         run: |
-          # create remote dir if missing
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "mkdir -p $APP_DIR"
-          # use rsync for efficient copy (install rsync on EC2 if missing)
           rsync -az -e "ssh -i ~/.ssh/id_rsa -p $PORT" ${{ env.PUBLISH_DIR }}/ $USER@$HOST:$APP_DIR/
 
       - name: Restart application on EC2
@@ -56,7 +76,4 @@ jobs:
           PORT: ${{ secrets.EC2_PORT || '22' }}
           APP_DIR: ${{ secrets.APP_DIR || '/home/${{ secrets.EC2_USER }}/myapp' }}
         run: |
-          # Example using systemd service named myapp.service (recommended - see below)
-          # ssh -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "sudo systemctl restart myapp.service && sudo systemctl status myapp.service --no-pager"
-          # If you don't use systemd, you can run the dll directly:
-          ssh -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "pkill -f 'dotnet MyApp.dll' || true; nohup dotnet $APP_DIR/MyApp.dll > $APP_DIR/log.txt 2>&1 &"
+          ssh -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "pkill -f 'dotnet LeetBot.dll' || true; nohup dotnet $APP_DIR/LeetBot.dll > $APP_DIR/log.txt 2>&1 &"
