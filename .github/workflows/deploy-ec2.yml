@@ -86,12 +86,38 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "mkdir -p $APP_DIR"
           rsync -az --delete -e "ssh -i ~/.ssh/id_rsa -p $PORT" "$SRC"/ $USER@$HOST:$APP_DIR/
 
-      - name: Restart application on EC2
+      - name: Restart application on EC2 (verbose debug)
         env:
           HOST: ${{ secrets.EC2_HOST }}
           USER: ${{ secrets.EC2_USER }}
           PORT: ${{ secrets.EC2_PORT || '22' }}
           APP_DIR: ${{ secrets.APP_DIR || '/home/ubuntu/LeetBot' }}
+          DLL_NAME: LeetBot.dll
         run: |
-          # stop previous process and start new one (adjust DLL name if different)
-          ssh -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "pkill -f 'dotnet LeetBot.dll' || true; nohup dotnet $APP_DIR/LeetBot.dll > $APP_DIR/log.txt 2>&1 &"
+          set -x
+      
+          SSH_CMD="ssh -vvv -i ~/.ssh/id_rsa -p $PORT -o StrictHostKeyChecking=no -o ConnectTimeout=10 $USER@$HOST"
+      
+          echo "Testing SSH connectivity..."
+          $SSH_CMD "echo 'SSH OK' && whoami && pwd" || { echo "SSH connectivity test failed"; exit 1; }
+      
+          echo "Listing target directory contents: $APP_DIR"
+          $SSH_CMD "ls -la $APP_DIR || true"
+      
+          echo "Check that DLL exists:"
+          $SSH_CMD "if [ -f $APP_DIR/$DLL_NAME ]; then echo 'DLL exists'; else echo 'DLL NOT FOUND'; ls -la $APP_DIR; fi"
+      
+          echo "Check dotnet runtime on remote (show first 200 chars of dotnet --info or error):"
+          $SSH_CMD "dotnet --info || echo 'dotnet not found or failed'"
+      
+          echo "Show last 200 lines of previous app log file (if present):"
+          $SSH_CMD "tail -n 200 $APP_DIR/log.txt || echo 'no log file yet'"
+      
+          echo "Attempt graceful stop (pkill) and start new process"
+          $SSH_CMD "pkill -f 'dotnet $DLL_NAME' || true; sleep 1; nohup dotnet $APP_DIR/$DLL_NAME > $APP_DIR/log.txt 2>&1 & echo \$! > $APP_DIR/last_pid && echo 'started'"
+      
+          echo "Show running dotnet processes (grep LeetBot):"
+          $SSH_CMD "ps aux | grep -i dotnet | grep $DLL_NAME || true"
+      
+          echo "Show newly created log tail:"
+          $SSH_CMD "tail -n 80 $APP_DIR/log.txt || true"
