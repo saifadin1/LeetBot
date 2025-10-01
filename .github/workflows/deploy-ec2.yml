@@ -90,18 +90,37 @@ jobs:
           USER: ${{ secrets.EC2_USER }}
           PORT: ${{ secrets.EC2_PORT || '22' }}
         run: |
-          echo "=== Verifying SSH setup ==="
-          ls -la ~/.ssh/
-          echo "SSH config:"
-          cat ~/.ssh/config || echo "No config file"
-          
-          echo "=== Testing SSH connection ==="
-          ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "echo 'Connection successful'" 2>&1 || echo "SSH failed with exit code $?"
-          
           echo "=== Stopping previous process ==="
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p "$PORT" "$USER@$HOST" "
             pgrep -f 'dotnet LeetBot.dll' && pkill -f 'dotnet LeetBot.dll' && echo 'Process stopped' || echo 'No process found'
           " || true
+
+      - name: Create appsettings.json on EC2
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          PORT: ${{ secrets.EC2_PORT || '22' }}
+          APP_DIR: ${{ secrets.APP_DIR || '/home/ubuntu/LeetBot' }}
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: |
+          echo "=== Creating appsettings.json ==="
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p "$PORT" "$USER@$HOST" "
+            cd $APP_DIR
+            cat > appsettings.json << 'EOF'
+{
+  \"ConnectionStrings\": {
+    \"DefaultConnection\": \"$DB_CONNECTION_STRING\"
+  },
+  \"Discord\": {
+    \"BotToken\": \"$DISCORD_BOT_TOKEN\"
+  }
+}
+EOF
+            echo 'appsettings.json created'
+            chmod 600 appsettings.json
+            ls -la appsettings.json
+          "
 
       - name: Start new application
         env:
@@ -111,9 +130,9 @@ jobs:
           APP_DIR: ${{ secrets.APP_DIR || '/home/ubuntu/LeetBot' }}
         run: |
           echo "=== Starting new process ==="
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p "$PORT" "$USER@$HOST" "
             echo '1. Navigating to app directory...'
-            cd $APP_DIR
+            cd $APP_DIR || { echo 'Failed to cd to $APP_DIR'; exit 1; }
             
             echo '2. Current directory:'
             pwd
@@ -122,17 +141,43 @@ jobs:
             ls -la
             
             echo '4. Checking if DLL exists:'
-            ls -la LeetBot.dll || echo 'DLL not found!'
+            if [ ! -f LeetBot.dll ]; then
+              echo 'ERROR: LeetBot.dll not found!'
+              exit 1
+            fi
+            echo 'LeetBot.dll found'
             
-            echo '5. Starting application...'
-            nohup dotnet LeetBot.dll > log.txt 2>&1 &
+            echo '5. Checking .NET installation:'
+            dotnet --version || { echo 'ERROR: .NET not installed or not in PATH'; exit 1; }
             
-            echo '6. Waiting for process to start...'
-            sleep 3
+            echo '6. Checking appsettings.json:'
+            ls -la appsettings.json || echo 'Warning: appsettings.json not found'
             
-            echo '7. Checking running processes:'
-            pgrep -f 'dotnet LeetBot.dll' && echo 'SUCCESS: Application is running!' || echo 'FAILED: Application did not start'
+            echo '7. Starting application in background...'
+            # Use absolute path and ensure log directory exists
+            nohup dotnet $APP_DIR/LeetBot.dll > $APP_DIR/app.log 2>&1 &
+            APP_PID=\$!
+            echo \"Started with PID: \$APP_PID\"
             
-            echo '8. Checking log file:'
-            ls -la log.txt || echo 'Log file not created'
+            echo '8. Waiting for process to initialize...'
+            sleep 5
+            
+            echo '9. Checking if process is still running:'
+            if pgrep -f 'dotnet LeetBot.dll' > /dev/null; then
+              echo 'SUCCESS: Application is running!'
+              pgrep -af 'dotnet LeetBot.dll'
+            else
+              echo 'FAILED: Application is not running!'
+              echo '10. Checking application log:'
+              if [ -f $APP_DIR/app.log ]; then
+                echo '--- Last 50 lines of app.log ---'
+                tail -50 $APP_DIR/app.log
+              else
+                echo 'Log file not created'
+              fi
+              exit 1
+            fi
+            
+            echo '11. Application log (first 20 lines):'
+            head -20 $APP_DIR/app.log 2>/dev/null || echo 'Cannot read log file yet'
           "
