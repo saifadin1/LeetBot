@@ -1,0 +1,62 @@
+name: Build & Deploy to EC2
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  DOTNET_VERSION: '9.0' 
+  PUBLISH_DIR: publish
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore and build
+        run: dotnet restore && dotnet build --no-restore --configuration Release
+
+      - name: Publish
+        run: dotnet publish -c Release -o ${{ env.PUBLISH_DIR }}
+
+      - name: Prepare SSH key
+        env:
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          # optionally disable strict host key checking for simpler setup (or add host to known_hosts)
+          printf "Host *\n  StrictHostKeyChecking no\n" >> ~/.ssh/config
+          chmod 600 ~/.ssh/config
+
+      - name: Copy files to EC2 (rsync)
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          PORT: ${{ secrets.EC2_PORT || '22' }}
+          APP_DIR: ${{ secrets.APP_DIR || '/home/${{ secrets.EC2_USER }}/myapp' }}
+        run: |
+          # create remote dir if missing
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "mkdir -p $APP_DIR"
+          # use rsync for efficient copy (install rsync on EC2 if missing)
+          rsync -az -e "ssh -i ~/.ssh/id_rsa -p $PORT" ${{ env.PUBLISH_DIR }}/ $USER@$HOST:$APP_DIR/
+
+      - name: Restart application on EC2
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          PORT: ${{ secrets.EC2_PORT || '22' }}
+          APP_DIR: ${{ secrets.APP_DIR || '/home/${{ secrets.EC2_USER }}/myapp' }}
+        run: |
+          # Example using systemd service named myapp.service (recommended - see below)
+          # ssh -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "sudo systemctl restart myapp.service && sudo systemctl status myapp.service --no-pager"
+          # If you don't use systemd, you can run the dll directly:
+          ssh -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "pkill -f 'dotnet MyApp.dll' || true; nohup dotnet $APP_DIR/MyApp.dll > $APP_DIR/log.txt 2>&1 &"
