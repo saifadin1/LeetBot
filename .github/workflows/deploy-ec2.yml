@@ -1,0 +1,203 @@
+name: Build & Deploy to EC2
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  DOTNET_VERSION: '9.0'
+  PUBLISH_DIR: publish
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Show repo tree (debug)
+        run: |
+          echo "Repository root:"
+          ls -la
+          echo "LeetBot folder contents:"
+          ls -la LeetBot || true
+
+      - name: Restore and build (LeetBot)
+        working-directory: LeetBot
+        run: |
+          if [ -f "LeetBot.sln" ]; then
+            dotnet restore LeetBot.sln
+            dotnet build LeetBot.sln --configuration Release --no-restore
+          else
+            dotnet restore LeetBot.csproj
+            dotnet build LeetBot.csproj --configuration Release --no-restore
+          fi
+
+      - name: Publish (LeetBot)
+        working-directory: LeetBot
+        run: |
+          if [ -f "LeetBot.sln" ]; then
+            dotnet publish LeetBot.sln -c Release -o ${{ env.PUBLISH_DIR }}
+          else
+            dotnet publish LeetBot.csproj -c Release -o ${{ env.PUBLISH_DIR }}
+          fi
+
+      - name: Verify publish output (debug & fail early)
+        env:
+          SRC: ${{ github.workspace }}/LeetBot/${{ env.PUBLISH_DIR }}
+        run: |
+          echo "Expecting publish folder at: $SRC"
+          if [ ! -d "$SRC" ]; then
+            echo "ERROR: publish directory not found: $SRC"
+            echo "Listing possible publish locations:"
+            ls -la "${{ github.workspace }}" || true
+            ls -la "${{ github.workspace }}/LeetBot" || true
+            exit 1
+          fi
+          echo "Publish folder exists. Contents:"
+          ls -la "$SRC"
+
+      - name: Prepare SSH key
+        env:
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          printf "Host *\n  StrictHostKeyChecking no\n" >> ~/.ssh/config
+          chmod 600 ~/.ssh/config
+
+      - name: Copy files to EC2 (rsync)
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          PORT: ${{ secrets.EC2_PORT || '22' }}
+          APP_DIR: ${{ secrets.APP_DIR || '/home/ubuntu/LeetBot' }}
+          SRC: ${{ github.workspace }}/LeetBot/${{ env.PUBLISH_DIR }}
+        run: |
+          echo "Copying from $SRC to $USER@$HOST:$APP_DIR"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "mkdir -p $APP_DIR"
+          rsync -az --delete -e "ssh -i ~/.ssh/id_rsa -p $PORT -o StrictHostKeyChecking=no" "$SRC"/ $USER@$HOST:$APP_DIR/
+
+      - name: Stop previous application
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          PORT: ${{ secrets.EC2_PORT || '22' }}
+        run: |
+          echo "=== Stopping previous process ==="
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p "$PORT" "$USER@$HOST" bash -l << 'ENDSSH'
+            pgrep -f 'LeetBot.dll' && pkill -f 'LeetBot.dll' && echo 'Process stopped' || echo 'No process found'
+          ENDSSH
+
+      - name: Create appsettings.json on EC2
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          PORT: ${{ secrets.EC2_PORT || '22' }}
+          APP_DIR: ${{ secrets.APP_DIR || '/home/ubuntu/LeetBot' }}
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: |
+          echo "=== Creating appsettings.json locally ==="
+          cat > appsettings.json << 'EOF'
+          {
+            "ConnectionStrings": {
+              "DefaultConnection": "PLACEHOLDER_DB_CONNECTION"
+            },
+            "Discord": {
+              "BotToken": "PLACEHOLDER_BOT_TOKEN"
+            }
+          }
+          EOF
+          
+          sed -i "s|PLACEHOLDER_DB_CONNECTION|$DB_CONNECTION_STRING|g" appsettings.json
+          sed -i "s|PLACEHOLDER_BOT_TOKEN|$DISCORD_BOT_TOKEN|g" appsettings.json
+          
+          echo "=== Copying appsettings.json to EC2 ==="
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -P "$PORT" appsettings.json "$USER@$HOST:$APP_DIR/"
+          
+          echo "=== Setting permissions ==="
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p "$PORT" "$USER@$HOST" "
+            chmod 600 $APP_DIR/appsettings.json
+            ls -la $APP_DIR/appsettings.json
+          "
+
+
+      - name: Ensure .NET is installed on EC2
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          PORT: ${{ secrets.EC2_PORT || '22' }}
+        run: |
+          echo "=== Checking .NET installation on EC2 ==="
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p "$PORT" "$USER@$HOST" bash -l << 'ENDSSH'
+            echo '.NET version:'
+            dotnet --version
+          ENDSSH
+
+      - name: Start new application
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          PORT: ${{ secrets.EC2_PORT || '22' }}
+          APP_DIR: ${{ secrets.APP_DIR || '/home/ubuntu/LeetBot' }}
+        run: |
+          echo "=== Starting new process ==="
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p "$PORT" "$USER@$HOST" bash -l << ENDSSH
+            set -e
+            
+            echo '1. Navigating to app directory...'
+            cd $APP_DIR
+            
+            echo '2. Current directory:'
+            pwd
+            
+            echo '3. Directory contents:'
+            ls -la
+            
+            echo '4. Checking if DLL exists:'
+            if [ ! -f LeetBot.dll ]; then
+              echo 'ERROR: LeetBot.dll not found!'
+              exit 1
+            fi
+            echo 'LeetBot.dll found'
+            
+            echo '5. Checking .NET installation:'
+            dotnet --version
+            
+            echo '6. Checking appsettings.json:'
+            ls -la appsettings.json || echo 'Warning: appsettings.json not found'
+            
+            echo '7. Starting application in background...'
+            nohup dotnet LeetBot.dll > app.log 2>&1 &
+            APP_PID=\$!
+            echo "Started with PID: \$APP_PID"
+            
+            echo '8. Waiting for process to initialize...'
+            sleep 5
+            
+            echo '9. Checking if process is still running:'
+            if pgrep -f 'LeetBot.dll' > /dev/null; then
+              echo 'SUCCESS: Application is running!'
+              pgrep -af 'LeetBot.dll'
+            else
+              echo 'FAILED: Application is not running!'
+              echo '10. Checking application log:'
+              if [ -f app.log ]; then
+                echo '--- Last 50 lines of app.log ---'
+                tail -50 app.log
+              else
+                echo 'Log file not created'
+              fi
+              exit 1
+            fi
+            
+            echo '11. Application log (first 20 lines):'
+            head -20 app.log 2>/dev/null || echo 'Cannot read log file yet'
+          ENDSSH
