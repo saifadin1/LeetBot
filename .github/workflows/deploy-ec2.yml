@@ -93,6 +93,7 @@ jobs:
           echo "=== Stopping previous process ==="
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "
             pkill -f 'dotnet LeetBot.dll' && echo 'Process stopped' || echo 'No process found'
+            exit 0
           "
 
       - name: Start new application
