@@ -90,11 +90,18 @@ jobs:
           USER: ${{ secrets.EC2_USER }}
           PORT: ${{ secrets.EC2_PORT || '22' }}
         run: |
+          echo "=== Verifying SSH setup ==="
+          ls -la ~/.ssh/
+          echo "SSH config:"
+          cat ~/.ssh/config || echo "No config file"
+          
+          echo "=== Testing SSH connection ==="
+          ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "echo 'Connection successful'" 2>&1 || echo "SSH failed with exit code $?"
+          
           echo "=== Stopping previous process ==="
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "
-            pkill -f 'dotnet LeetBot.dll' && echo 'Process stopped' || echo 'No process found'
-            exit 0
-          "
+            pgrep -f 'dotnet LeetBot.dll' && pkill -f 'dotnet LeetBot.dll' && echo 'Process stopped' || echo 'No process found'
+          " || true
 
       - name: Start new application
         env:
