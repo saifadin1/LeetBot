@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Rest;
 using LeetBot.Data;
+using LeetBot.Helpers;
 using LeetBot.Interfaces;
 using LeetBot.Models;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +23,7 @@ namespace LeetBot.Repositories
             var challenge = new Challenge()
             {
                 Id = message.Id,               // Message ID is used as the challenge ID
-                ChallengerId = $"{userId}-{interaction.GuildId}",
+                ChallengerId = TextProcessor.UserId(userId, interaction.GuildId),
                 Difficulty = difficulty,
                 GuildId = interaction.GuildId,
                 Topic = topic,
@@ -71,7 +72,7 @@ namespace LeetBot.Repositories
 
         public async Task<bool> IsUserChallenging(IDiscordInteraction interaction)
         {
-            var userId = $"{interaction.User.Id}-{interaction.GuildId}";
+            var userId = TextProcessor.UserId(interaction.User.Id, interaction.GuildId);
             var challenge = await _dbContext.Challenges
                 .FirstOrDefaultAsync(c => c.ChallengerId == userId || c.OpponentId == userId);
             return challenge != null;

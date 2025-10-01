@@ -34,7 +34,13 @@ namespace LeetBot.Commands
             await _userRepo.UnlockUserAsync(command);
             await command.RespondAsync("You have left the challenge", ephemeral: true);
 
-            //var challange = await _challengeRepo.GetChallengeByUserId($"{command.User.Id}-{command.GuildId}");
+            //var challange = await _challengeRepo.GetChallengeBy
+            //
+            //
+            //
+            //
+            //
+            //($"{command.User.Id}-{command.GuildId}");
             //if (challange == null)
             //{
             //    await command.RespondAsync("You are not in a challenge.", ephemeral: true);

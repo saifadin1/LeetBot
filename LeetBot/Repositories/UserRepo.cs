@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using LeetBot.Data;
+using LeetBot.Helpers;
 using LeetBot.Interfaces;
 using LeetBot.Models;
 using Microsoft.EntityFrameworkCore;
@@ -65,7 +66,7 @@ namespace LeetBot.Repositories
 
         public async Task LockUserAsync(IDiscordInteraction interaction)
         {
-            var userId = $"{interaction.User.Id}-{interaction.GuildId}";
+            var userId = TextProcessor.UserId(interaction.User.Id, interaction.GuildId);
             var user = await _dbContext.Users.FindAsync(userId);
             if (user != null)
             {
@@ -76,7 +77,7 @@ namespace LeetBot.Repositories
         }
         public async Task UnlockUserAsync(IDiscordInteraction interaction)
         {
-            var userId = $"{interaction.User.Id}-{interaction.GuildId}";
+            var userId = TextProcessor.UserId(interaction.User.Id, interaction.GuildId); ;
             var user = await _dbContext.Users.FindAsync(userId);
             if (user != null)
             {
@@ -98,7 +99,7 @@ namespace LeetBot.Repositories
 
         public async Task UpdateUserLeetCodeUsernameAsync(IDiscordInteraction interaction, string newLeetCodeUsername)
         {
-            var userId = $"{interaction.User.Id}-{interaction.GuildId}";
+            var userId = TextProcessor.UserId(interaction.User.Id, interaction.GuildId);
             var user = await _dbContext.Users.FindAsync(userId);
             if (user != null)
             {

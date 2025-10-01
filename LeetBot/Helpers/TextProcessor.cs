@@ -15,7 +15,7 @@ namespace LeetBot.Helpers
 
         public static string UserId(ulong userId, ulong? guildId)
         {
-            return $"{userId}-{guildId}";
+            return TextProcessor.UserId(userId, guildId);
         }
     }
 }

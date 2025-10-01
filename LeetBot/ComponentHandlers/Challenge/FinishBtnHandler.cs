@@ -1,4 +1,5 @@
 ﻿using Discord.WebSocket;
+using LeetBot.Helpers;
 using LeetBot.Interfaces;
 using LeetBot.Models;
 using LeetBot.Repositories;
@@ -28,7 +29,7 @@ namespace LeetBot.ComponentHandlers.Challenge
         public async Task ExecuteAsync(SocketMessageComponent component, SocketThreadChannel threadChannel)
         {
             await component.DeferAsync(ephemeral: true);
-            var userId = $"{component.User.Id}-{component.GuildId}";
+            var userId = TextProcessor.UserId(component.User.Id, component.GuildId);
             var challenge = await _challengeRepo.GetChallengeByUserId(userId);
             _logger.LogInformation($"Challenge: {challenge.TitleSlug}");
             await _leetCodeService.GetUsersSubmissions(component, challenge, threadChannel);

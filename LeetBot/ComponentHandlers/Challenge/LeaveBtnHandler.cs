@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using LeetBot.Helpers;
 using LeetBot.Interfaces;
 using LeetBot.Repositories;
 using System;
@@ -29,7 +30,7 @@ namespace LeetBot.ComponentHandlers.Challenge
         {
             var interaction = (SocketInteraction)component;
 
-            var userId = $"{component.User.Id}-{component.GuildId}";
+            var userId = TextProcessor.UserId(component.User.Id, component.GuildId);
             var challenge = await _challengeRepo.GetChallengeByUserId(userId);
 
             if (challenge == null)                      

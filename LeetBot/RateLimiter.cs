@@ -10,7 +10,11 @@ namespace LeetBot
 {
     internal static class RateLimiter
     {
-        private static readonly ConcurrentDictionary<(ulong UserId, string CommandName), DateTime> _requests = new();
+        private static readonly ConcurrentDictionary<(ulong 
+            
+            
+            
+            , string CommandName), DateTime> _requests = new();
 
         public static TimeSpan isRateLimited(SocketSlashCommand command)
         {
