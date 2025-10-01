@@ -86,12 +86,47 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "mkdir -p $APP_DIR"
           rsync -az --delete -e "ssh -i ~/.ssh/id_rsa -p $PORT" "$SRC"/ $USER@$HOST:$APP_DIR/
 
-      - name: Restart application on EC2
+      - name: Stop previous application
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          PORT: ${{ secrets.EC2_PORT || '22' }}
+        run: |
+          echo "=== Stopping previous process ==="
+          ssh -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "
+            pkill -f 'dotnet LeetBot.dll' && echo 'Process stopped' || echo 'No process found'
+          "
+
+      - name: Start new application
         env:
           HOST: ${{ secrets.EC2_HOST }}
           USER: ${{ secrets.EC2_USER }}
           PORT: ${{ secrets.EC2_PORT || '22' }}
           APP_DIR: ${{ secrets.APP_DIR || '/home/ubuntu/LeetBot' }}
         run: |
-          # stop previous process and start new one (adjust DLL name if different)
-          ssh -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "pkill -f 'dotnet LeetBot.dll' || true; nohup dotnet $APP_DIR/LeetBot.dll > $APP_DIR/log.txt 2>&1 &"
+          echo "=== Starting new process ==="
+          ssh -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "
+            echo '1. Navigating to app directory...'
+            cd $APP_DIR
+            
+            echo '2. Current directory:'
+            pwd
+            
+            echo '3. Directory contents:'
+            ls -la
+            
+            echo '4. Checking if DLL exists:'
+            ls -la LeetBot.dll || echo 'DLL not found!'
+            
+            echo '5. Starting application...'
+            nohup dotnet LeetBot.dll > log.txt 2>&1 &
+            
+            echo '6. Waiting for process to start...'
+            sleep 3
+            
+            echo '7. Checking running processes:'
+            pgrep -f 'dotnet LeetBot.dll' && echo 'SUCCESS: Application is running!' || echo 'FAILED: Application did not start'
+            
+            echo '8. Checking log file:'
+            ls -la log.txt || echo 'Log file not created'
+          "
