@@ -149,7 +149,7 @@ jobs:
           APP_DIR: ${{ secrets.APP_DIR || '/home/ubuntu/LeetBot' }}
         run: |
           echo "=== Starting new process ==="
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p "$PORT" "$USER@$HOST" bash -l << 'ENDSSH'
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p "$PORT" "$USER@$HOST" bash -l << ENDSSH
             set -e
             
             echo '1. Navigating to app directory...'
@@ -176,8 +176,8 @@ jobs:
             
             echo '7. Starting application in background...'
             nohup dotnet LeetBot.dll > app.log 2>&1 &
-            APP_PID=$!
-            echo "Started with PID: $APP_PID"
+            APP_PID=\$!
+            echo "Started with PID: \$APP_PID"
             
             echo '8. Waiting for process to initialize...'
             sleep 5
