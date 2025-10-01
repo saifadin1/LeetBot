@@ -108,15 +108,15 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p "$PORT" "$USER@$HOST" "
             cd $APP_DIR
             cat > appsettings.json << 'EOF'
-{
-  \"ConnectionStrings\": {
-    \"DefaultConnection\": \"$DB_CONNECTION_STRING\"
-  },
-  \"Discord\": {
-    \"BotToken\": \"$DISCORD_BOT_TOKEN\"
-  }
-}
-EOF
+            {
+              \"ConnectionStrings\": {
+                \"DefaultConnection\": \"$DB_CONNECTION_STRING\"
+              },
+              \"Discord\": {
+                \"BotToken\": \"$DISCORD_BOT_TOKEN\"
+              }
+            }
+            EOF
             echo 'appsettings.json created'
             chmod 600 appsettings.json
             ls -la appsettings.json
