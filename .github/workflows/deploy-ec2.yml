@@ -6,7 +6,7 @@ on:
 
 env:
   DOTNET_VERSION: '9.0'
-  PUBLISH_DIR: publish
+  PUBLISH_DIR: publish    # this is the folder name created inside LeetBot (LeetBot/publish)
 
 jobs:
   build-and-deploy:
@@ -22,20 +22,18 @@ jobs:
 
       - name: Show repo tree (debug)
         run: |
-          echo "Listing repo root:"
+          echo "Repository root:"
           ls -la
-          echo "Listing LeetBot folder:"
+          echo "LeetBot folder contents:"
           ls -la LeetBot || true
 
       - name: Restore and build (LeetBot)
         working-directory: LeetBot
         run: |
-          # if you have a solution file, prefer restore/build against it:
           if [ -f "LeetBot.sln" ]; then
             dotnet restore LeetBot.sln
             dotnet build LeetBot.sln --configuration Release --no-restore
           else
-            # fallback to csproj
             dotnet restore LeetBot.csproj
             dotnet build LeetBot.csproj --configuration Release --no-restore
           fi
@@ -49,6 +47,22 @@ jobs:
             dotnet publish LeetBot.csproj -c Release -o ${{ env.PUBLISH_DIR }}
           fi
 
+      - name: Verify publish output (debug & fail early)
+        # compute the absolute path to the publish folder and show it
+        env:
+          SRC: ${{ github.workspace }}/LeetBot/${{ env.PUBLISH_DIR }}
+        run: |
+          echo "Expecting publish folder at: $SRC"
+          if [ ! -d "$SRC" ]; then
+            echo "ERROR: publish directory not found: $SRC"
+            echo "Listing possible publish locations:"
+            ls -la "${{ github.workspace }}" || true
+            ls -la "${{ github.workspace }}/LeetBot" || true
+            exit 1
+          fi
+          echo "Publish folder exists. Contents:"
+          ls -la "$SRC"
+
       - name: Prepare SSH key
         env:
           SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
@@ -56,6 +70,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          # optional: add the host to known_hosts properly (safer) or disable checking during first run
           printf "Host *\n  StrictHostKeyChecking no\n" >> ~/.ssh/config
           chmod 600 ~/.ssh/config
 
@@ -64,16 +79,19 @@ jobs:
           HOST: ${{ secrets.EC2_HOST }}
           USER: ${{ secrets.EC2_USER }}
           PORT: ${{ secrets.EC2_PORT || '22' }}
-          APP_DIR: ${{ secrets.APP_DIR || '/home/${{ secrets.EC2_USER }}/myapp' }}
+          APP_DIR: ${{ secrets.APP_DIR || '/home/ubuntu/LeetBot' }}
+          SRC: ${{ github.workspace }}/LeetBot/${{ env.PUBLISH_DIR }}
         run: |
+          echo "Copying from $SRC to $USER@$HOST:$APP_DIR"
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "mkdir -p $APP_DIR"
-          rsync -az -e "ssh -i ~/.ssh/id_rsa -p $PORT" ${{ env.PUBLISH_DIR }}/ $USER@$HOST:$APP_DIR/
+          rsync -az --delete -e "ssh -i ~/.ssh/id_rsa -p $PORT" "$SRC"/ $USER@$HOST:$APP_DIR/
 
       - name: Restart application on EC2
         env:
           HOST: ${{ secrets.EC2_HOST }}
           USER: ${{ secrets.EC2_USER }}
           PORT: ${{ secrets.EC2_PORT || '22' }}
-          APP_DIR: ${{ secrets.APP_DIR || '/home/${{ secrets.EC2_USER }}/myapp' }}
+          APP_DIR: ${{ secrets.APP_DIR || '/home/ubuntu/LeetBot' }}
         run: |
+          # stop previous process and start new one (adjust DLL name if different)
           ssh -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "pkill -f 'dotnet LeetBot.dll' || true; nohup dotnet $APP_DIR/LeetBot.dll > $APP_DIR/log.txt 2>&1 &"
