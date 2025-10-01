@@ -6,7 +6,7 @@ on:
 
 env:
   DOTNET_VERSION: '9.0'
-  PUBLISH_DIR: publish    # this is the folder name created inside LeetBot (LeetBot/publish)
+  PUBLISH_DIR: publish
 
 jobs:
   build-and-deploy:
@@ -48,7 +48,6 @@ jobs:
           fi
 
       - name: Verify publish output (debug & fail early)
-        # compute the absolute path to the publish folder and show it
         env:
           SRC: ${{ github.workspace }}/LeetBot/${{ env.PUBLISH_DIR }}
         run: |
@@ -70,7 +69,6 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # optional: add the host to known_hosts properly (safer) or disable checking during first run
           printf "Host *\n  StrictHostKeyChecking no\n" >> ~/.ssh/config
           chmod 600 ~/.ssh/config
 
@@ -84,7 +82,7 @@ jobs:
         run: |
           echo "Copying from $SRC to $USER@$HOST:$APP_DIR"
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "mkdir -p $APP_DIR"
-          rsync -az --delete -e "ssh -i ~/.ssh/id_rsa -p $PORT" "$SRC"/ $USER@$HOST:$APP_DIR/
+          rsync -az --delete -e "ssh -i ~/.ssh/id_rsa -p $PORT -o StrictHostKeyChecking=no" "$SRC"/ $USER@$HOST:$APP_DIR/
 
       - name: Stop previous application
         env:
@@ -93,7 +91,7 @@ jobs:
           PORT: ${{ secrets.EC2_PORT || '22' }}
         run: |
           echo "=== Stopping previous process ==="
-          ssh -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "
             pkill -f 'dotnet LeetBot.dll' && echo 'Process stopped' || echo 'No process found'
           "
 
@@ -105,7 +103,7 @@ jobs:
           APP_DIR: ${{ secrets.APP_DIR || '/home/ubuntu/LeetBot' }}
         run: |
           echo "=== Starting new process ==="
-          ssh -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $PORT $USER@$HOST "
             echo '1. Navigating to app directory...'
             cd $APP_DIR
             
