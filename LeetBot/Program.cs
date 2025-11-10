@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
 using System.Reactive.Linq;
 using System.Reflection;
+using LeetBot.ComponentHandlers.TeamChallenge.Problems;
 
 namespace LeetBot
 {
@@ -62,6 +63,10 @@ namespace LeetBot
                     services.AddScoped<JoinTeam2BtnHandler>();
                     services.AddScoped<StartTeamBtnHandler>();
                     services.AddScoped<leaveTeamBtnHandler>();
+                    services.AddScoped<EasyBtnHandler>();
+                    services.AddScoped<MediumBtnHandler>();
+                    services.AddScoped<HardBtnHandler>();
+
 
                     services.AddScoped<ILeetCodeService, LeetCodeService>();
                     services.AddScoped<ITeamService, TeamService>();

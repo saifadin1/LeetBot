@@ -31,21 +31,20 @@ namespace LeetBot.Services
 
         public async Task HandleDifficultyButton(SocketMessageComponent component, SocketThreadChannel threadChannel, string difficulty)
         {
-            await component.DeferAsync();
 
             // validation (verified, free)
             bool isVerified = await _userRepo.IsUserExistAsync(component);
             if (!isVerified)
             {
-                await component.RespondAsync("You need to verify yourself first using the /identify command.");
+                await component.FollowupAsync("You need to verify yourself first using the /identify command.");
                 return;
             }
-            bool isFree = await _userRepo.IsUserFreeAsync(component);
-            if (!isFree)
-            {
-                await component.RespondAsync("You are already in a challenge.", ephemeral: true);
-                return;
-            }
+            //bool isFree = await _userRepo.IsUserFreeAsync(component);
+            //if (!isFree)
+            //{
+            //    await component.FollowupAsync("You are already in a challenge.", ephemeral: true);
+            //    return;
+            //}
 
             // get all users last submissions
             var challenge = await _teamChallengeRepo.GetTeamChallengeByIdAsync((long)component.Message.Id);
@@ -53,7 +52,7 @@ namespace LeetBot.Services
             if (challenge == null)
             {
                 _logger.LogError("Challenge not found.");
-                await component.RespondAsync("Challenge not found.", ephemeral: true);
+                await component.FollowupAsync("Challenge not found.", ephemeral: true);
                 return;
             }
 
@@ -64,10 +63,26 @@ namespace LeetBot.Services
                 return;
             }
 
-            var problemSlug = challenge.HardProblemTitleSlug;
+            string problemSlug;
+            switch (difficulty.ToLower())
+            {
+                case "easy":
+                    problemSlug = challenge.EasyProblemTitleSlug;
+                    break;
+                case "medium":
+                    problemSlug = challenge.MediumProblemTitleSlug;
+                    break;
+                case "hard":
+                    problemSlug = challenge.HardProblemTitleSlug;
+                    break;
+                default:
+                    await component.FollowupAsync("Invalid difficulty.", ephemeral: true);
+                    return;
+            }
+
             var teams = challenge.Teams;
             var allSubmissions = new List<UserLastSubmissionDTO>();
-            foreach (var user in (IEnumerable<User>)teams.First())
+            foreach (var user in teams.First().Users)
             {
                 var lastSubmission = await _leet.GetUserSubmissionsAsync(user.LeetCodeUsername);
                 if (lastSubmission != null && lastSubmission.TitleSlug == problemSlug)
@@ -75,7 +90,8 @@ namespace LeetBot.Services
                     allSubmissions.Add(lastSubmission);
                 }
             }
-            foreach (var user in (IEnumerable<User>)teams.Last())
+
+            foreach (var user in teams.Last().Users)
             {
                 var lastSubmission = await _leet.GetUserSubmissionsAsync(user.LeetCodeUsername);
                 if (lastSubmission != null && lastSubmission.TitleSlug == problemSlug)
@@ -83,6 +99,7 @@ namespace LeetBot.Services
                     allSubmissions.Add(lastSubmission);
                 }
             }
+
 
             allSubmissions.Sort();
 

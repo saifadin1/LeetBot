@@ -53,11 +53,11 @@ namespace LeetBot.ComponentHandlers.TeamChallenge
             //}
 
             // validation - both teams have 2 users
-            if (teams.First().Users.Count != 2 && teams.Last().Users.Count != 2)
-            {
-                await component.FollowupAsync("Both teams must have 2 users to start the challenge", ephemeral: true);
-                return;
-            }
+            //if (teams.First().Users.Count != 2 && teams.Last().Users.Count != 2)
+            //{
+            //    await component.FollowupAsync("Both teams must have 2 users to start the challenge", ephemeral: true);
+            //    return;
+            //}
 
             
             var easyProblem = await _leetCodeService.GetRandomProblemAsync("easy", null);
