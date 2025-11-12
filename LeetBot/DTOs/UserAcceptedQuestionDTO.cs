@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace LeetBot.DTOs
 {
-    internal class UserAcceptedQuestionDTO
+    public class UserAcceptedQuestionsDTO
     {
+        public int Count { get; set; }
+        public string Difficulty { get; set; }
     }
 }

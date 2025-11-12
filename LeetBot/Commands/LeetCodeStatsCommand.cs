@@ -23,7 +23,7 @@ namespace LeetBot.Commands
         public SlashCommandBuilder BuildCommand()
         {
             return new SlashCommandBuilder()
-                .WithName("leetcode-stats")
+                .WithName("lcstats")
                 .WithDescription("Get LeetCode statistics for a user")
                 .AddOption(new SlashCommandOptionBuilder()
                     .WithName("username")
@@ -38,7 +38,7 @@ namespace LeetBot.Commands
             await command.DeferAsync();
 
             var leetCodeUsername = command.Data.Options
-                .FirstOrDefault(x => x.Name == "leetcode_id")?.Value?.ToString();
+                .FirstOrDefault(x => x.Name == "username")?.Value?.ToString();
 
             var result = await _leetCodeService.GetNumAccQuestionsAsync(leetCodeUsername);
 
