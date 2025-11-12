@@ -56,13 +56,6 @@ namespace LeetBot.Services
                 return;
             }
 
-            // make sure this problem not solved yet
-            if (challenge.Problem3SolvedByTeam != 0)
-            {
-                await component.FollowupAsync("This problem is already solved by one of the teams", ephemeral: true);
-                return;
-            }
-
             string problemSlug;
             switch (difficulty.ToLower())
             {
@@ -79,6 +72,14 @@ namespace LeetBot.Services
                     await component.FollowupAsync("Invalid difficulty.", ephemeral: true);
                     return;
             }
+
+            // make sure this problem not solved yet
+            if (challenge.Problem3SolvedByTeam != 0)
+            {
+                await component.FollowupAsync("This problem is already solved by one of the teams", ephemeral: true);
+                return;
+            }
+
 
             var teams = challenge.Teams;
             var allSubmissions = new List<UserLastSubmissionDTO>();
@@ -143,22 +144,44 @@ namespace LeetBot.Services
                 firstSolverTeam = 1;
                 challenge.Team1CurrentScore += scoreToBeAdded;
                 challenge.Team2MaxPossibleScore -= scoreToBeAdded;
-                challenge.Problem3SolvedByTeam = 1;
+                switch (difficulty.ToLower())
+                {
+                    case "easy":
+                        challenge.Problem1SolvedByTeam = 1;
+                        break;
+                    case "medium":
+                        challenge.Problem2SolvedByTeam = 1;
+                        break;
+                    case "hard":
+                        challenge.Problem3SolvedByTeam = 1;
+                        break;
+                }
             }
             else
             {
                 firstSolverTeam = 2;
                 challenge.Team1CurrentScore += scoreToBeAdded;
                 challenge.Team2MaxPossibleScore -= scoreToBeAdded;
-                challenge.Problem3SolvedByTeam = 2;
+                switch (difficulty.ToLower())
+                {
+                    case "easy":
+                        challenge.Problem1SolvedByTeam = 2;
+                        break;
+                    case "medium":
+                        challenge.Problem2SolvedByTeam = 2;
+                        break;
+                    case "hard":
+                        challenge.Problem3SolvedByTeam = 2;
+                        break;
+                }
             }
 
             await component.FollowupAsync($"the {difficulty.ToUpper()} problem solved by team {(firstSolverTeam == 1 ? "1️⃣ " : "2️⃣ ")}");
 
             // check if the challenge is finished
-            if (challenge.Team1CurrentScore >= challenge.Team2MaxPossibleScore)
+            if (challenge.Team1CurrentScore > challenge.Team2MaxPossibleScore)
             {
-                await threadChannel.SendMessageAsync($"Team 1 wins with score: {challenge.Team1CurrentScore} - {challenge.Team2MaxPossibleScore}");
+                await threadChannel.SendMessageAsync($"Team 1 wins with score: {challenge.Team1CurrentScore} - {challenge.Team2CurrentScore}");
                 await _teamChallengeRepo.DeleteTeamChallengeAsync(challenge.Id);
                 await component.ModifyOriginalResponseAsync(msg =>
                 {
@@ -170,9 +193,9 @@ namespace LeetBot.Services
                 });
                 return;
             }
-            else if (challenge.Team2CurrentScore >= challenge.Team1MaxPossibleScore)
+            else if (challenge.Team2CurrentScore > challenge.Team1MaxPossibleScore)
             {
-                await threadChannel.SendMessageAsync($"Team 2 wins with score: {challenge.Team2CurrentScore} - {challenge.Team1MaxPossibleScore}");
+                await threadChannel.SendMessageAsync($"Team 2 wins with score: {challenge.Team2CurrentScore} - {challenge.Team1CurrentScore}");
                 await _teamChallengeRepo.DeleteTeamChallengeAsync(challenge.Id);
                 await component.ModifyOriginalResponseAsync(msg =>
                 {

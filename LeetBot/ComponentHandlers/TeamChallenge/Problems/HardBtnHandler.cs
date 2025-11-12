@@ -23,6 +23,8 @@ namespace LeetBot.ComponentHandlers.TeamChallenge.Problems
 
         public async Task ExecuteAsync(SocketMessageComponent component, SocketThreadChannel threadChannel)
         {
+            await component.DeferAsync();
+
             await _teamService.HandleDifficultyButton(component, threadChannel, "hard");
 
         }
