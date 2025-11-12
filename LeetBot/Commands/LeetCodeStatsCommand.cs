@@ -46,7 +46,9 @@ namespace LeetBot.Commands
             {
                 var embed = new EmbedBuilder()
                     .WithTitle($"LeetCode Stats for {result.LeetCodeUsername}")
-                    .WithColor(Color.Green);
+                    .WithColor(Color.Green)
+                    .WithThumbnailUrl(await _leetCodeService.GetUserAvatarAsync(leetCodeUsername));
+
                 var sb = new StringBuilder();
                 foreach (var item in result.NumAcceptedQuestions)
                 {

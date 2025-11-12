@@ -12,7 +12,8 @@ namespace LeetBot.Interfaces
         Task<List<(int, string)>> GetUserProblemSolved(string username);
         Task GetUsersSubmissions(SocketMessageComponent component, Challenge challenge, SocketThreadChannel threadChannel);
         Task<UserAcceptedQuestionsResponseDTO> GetNumAccQuestionsAsync(string username);
-        
+        Task<string> GetUserAvatarAsync(string username);
+
         //Task MonitorChallengeAsync(SocketMessageComponent component, Challenge challenge, SocketThreadChannel threadChannel, CancellationToken cancellationToken);
     }
 }

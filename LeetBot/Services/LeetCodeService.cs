@@ -598,5 +598,43 @@ namespace LeetBot.Services
             return result;
         }
 
+        public async Task<string> GetUserAvatarAsync(string username)
+        {
+            var query = new
+            {
+                operationName = "userPublicProfile",
+                query = @"query userPublicProfile($username: String!) {
+                            matchedUser(username: $username) {
+                                profile {
+                                    userAvatar
+                                }
+                            }
+                        }",
+                variables = new { username }
+            };
+
+
+            var jsonContent = JsonConvert.SerializeObject(query);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("https://leetcode.com/graphql", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"LeetCode API call failed. Status: {response.StatusCode}. Body: {error}");
+            }
+
+            var responseString = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation("LeetCode response: {Response}", responseString);
+
+            dynamic data = JsonConvert.DeserializeObject(responseString);
+            var acceptedQuestions = data?.data?.userProfileUserQuestionProgressV2?.numAcceptedQuestions;
+
+            string avatarUrl = data.data.matchedUser.profile.userAvatar.ToString();
+
+            return avatarUrl;
+        }
+
     }
 }
