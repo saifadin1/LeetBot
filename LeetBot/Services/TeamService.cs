@@ -132,7 +132,7 @@ namespace LeetBot.Services
                     scoreToBeAdded = 200;
                     break;
                 case "hard":
-                    scoreToBeAdded = 300;
+                    scoreToBeAdded = 400;
                     break;
                 default:
                     scoreToBeAdded = 0;

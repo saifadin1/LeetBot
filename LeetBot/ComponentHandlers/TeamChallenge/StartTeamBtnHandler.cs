@@ -36,6 +36,19 @@ namespace LeetBot.ComponentHandlers.TeamChallenge
         {
             await component.DeferAsync();
 
+            // modify embid to show challenge is loading (while fetching problems)
+            var loadingEmbed = new EmbedBuilder()
+                 .WithTitle("Starting Team Challenge...")
+                 .WithDescription("Fetching problems, please wait...")
+                 .WithColor(Color.Orange);
+
+            await component.ModifyOriginalResponseAsync(msg =>
+            {
+                msg.Embed = loadingEmbed.Build();
+            });
+
+
+
             // validation - this user is the creator of the thread FirstTeam.user.First
             var challengeId = component.Message.Id;
             var teams = await _teamRepo.GetTeamsByChallengeIdAsync((long)challengeId);
