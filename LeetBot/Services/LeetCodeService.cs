@@ -537,5 +537,66 @@ namespace LeetBot.Services
 
             return questions;
         }
+
+        
+        public async Task<UserAcceptedQuestionsResponseDTO> GetNumAccQuestionsAsync(string username)
+        {
+            var query = new
+            {
+                operationName = "userProfileUserQuestionProgressV2",
+                query = """
+                    query userProfileUserQuestionProgressV2($userSlug: String!) {
+                      userProfileUserQuestionProgressV2(userSlug: $userSlug) {
+                        numAcceptedQuestions {
+                          count
+                          difficulty
+                        }
+                      }
+                    }
+                    """,
+                variables = new { userSlug = username }
+            };
+
+            var jsonContent = JsonConvert.SerializeObject(query);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("https://leetcode.com/graphql", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"LeetCode API call failed. Status: {response.StatusCode}. Body: {error}");
+            }
+
+            var responseString = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation("LeetCode response: {Response}", responseString);
+
+            dynamic data = JsonConvert.DeserializeObject(responseString);
+            var acceptedQuestions = data?.data?.userProfileUserQuestionProgressV2?.numAcceptedQuestions;
+
+            if (acceptedQuestions == null)
+            {
+                _logger.LogWarning("No accepted questions found for user: {Username}", username);
+                return null;
+            }
+
+            var result = new UserAcceptedQuestionsResponseDTO()
+            {
+                LeetCodeUsername = username,
+                NumAcceptedQuestions = new List<UserAcceptedQuestionsDTO>()
+            };
+
+            foreach (var q in acceptedQuestions)
+            {
+                result.NumAcceptedQuestions.Add(new UserAcceptedQuestionsDTO()
+                {
+                    Count = q.count,
+                    Difficulty = q.difficulty
+                });
+            }
+
+            return result;
+        }
+
     }
 }

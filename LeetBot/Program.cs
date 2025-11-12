@@ -55,6 +55,7 @@ namespace LeetBot
                     services.AddScoped<LeaderboardCommand>();
                     services.AddScoped<LeaveFromChallangCommand>();
                     services.AddScoped<HelpCommand>();
+                    services.AddScoped<LeetCodeStatsCommand>();
 
                     services.AddScoped<JoinBtnHandler>();
                     services.AddScoped<LeaveBtnHandler>();
