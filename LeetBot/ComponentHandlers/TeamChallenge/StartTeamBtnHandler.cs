@@ -45,6 +45,9 @@ namespace LeetBot.ComponentHandlers.TeamChallenge
             await component.ModifyOriginalResponseAsync(msg =>
             {
                 msg.Embed = loadingEmbed.Build();
+                // remove the button to prevent multiple clicks
+                msg.Components = new ComponentBuilder().Build();
+
             });
 
 
