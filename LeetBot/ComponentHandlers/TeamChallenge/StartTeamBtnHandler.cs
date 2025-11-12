@@ -89,10 +89,13 @@ namespace LeetBot.ComponentHandlers.TeamChallenge
             await _teamChallengeRepo.SaveChangesAsync();
 
             // modify the message 
+    
             var embed = new EmbedBuilder()
-                 .WithTitle("Team Challenge started!")
-                 .WithDescription($"**Easy:** {TextProcessor.ProblemLink(easyProblem)}\n**Medium:** {TextProcessor.ProblemLink(mediumProblem)}\n**Hard:** {TextProcessor.ProblemLink(hardProblem)}")
-                 .WithColor(Color.Blue);
+                .WithTitle("Team Challenge started!")
+                .WithDescription($"**Easy:** [{easyProblem}]({TextProcessor.ProblemLink(easyProblem)})\n" +
+                                 $"**Medium:** [{mediumProblem}]({TextProcessor.ProblemLink(mediumProblem)})\n" +
+                                 $"**Hard:** [{hardProblem}]({TextProcessor.ProblemLink(hardProblem)})")
+                .WithColor(Color.Blue);
 
             var components = new ComponentBuilder()
                 .WithButton("Easy", "teamEasy", ButtonStyle.Primary)
