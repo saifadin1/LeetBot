@@ -25,22 +25,14 @@ namespace LeetBot
 
 
 
-        public Bot(IConfiguration configuration, ILogger<Bot> logger)
+        public Bot(IConfiguration configuration, ILogger<Bot> logger, DiscordSocketClient client , CommandService commands)
         {
             _configuration = configuration;
             _logger = logger;
 
-            DiscordSocketConfig config = new DiscordSocketConfig()
-            {
-                GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent | GatewayIntents.Guilds | GatewayIntents.GuildMessages,
-                LogLevel = LogSeverity.Debug,
-                AlwaysDownloadUsers = true,
-                DefaultRetryMode = RetryMode.AlwaysRetry
-            };
 
-
-            _client = new DiscordSocketClient(config);
-            _commands = new CommandService();
+            _client = client;
+            _commands = commands;
 
 
         }
