@@ -3,6 +3,7 @@ using System;
 using LeetBot.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LeetBot.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251113205447_addChannelIds")]
+    partial class addChannelIds
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -36,9 +39,6 @@ namespace LeetBot.Migrations
 
                     b.Property<string>("Difficulty")
                         .HasColumnType("text");
-
-                    b.Property<DateTime>("EndedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal?>("GuildId")
                         .HasColumnType("numeric(20,0)");

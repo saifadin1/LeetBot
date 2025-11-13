@@ -18,6 +18,12 @@ namespace LeetBot.Models
         public string? OpponentId { get; set; }
         public User? Opponent { get; set; }
         public ulong? GuildId { get; set; }
+        public ulong ChannelId { get; set; }
         public DateTime StartedAt { get; set; }
+        public DateTime EndedAt { get; set; }
+
+
+        public bool IsActive { get; set; } = true;
+
     }
 }

@@ -24,9 +24,12 @@ namespace LeetBot.Repositories
             {
                 Id = message.Id,               // Message ID is used as the challenge ID
                 ChallengerId = TextProcessor.UserId(userId, interaction.GuildId),
+                ChannelId = interaction.ChannelId ?? 0,
                 Difficulty = difficulty,
                 GuildId = interaction.GuildId,
                 Topic = topic,
+                StartedAt = DateTime.UtcNow,
+                EndedAt = DateTime.UtcNow + TimeSpan.FromMinutes(30)
             };
 
             await _dbContext.Challenges.AddAsync(challenge);

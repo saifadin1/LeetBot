@@ -62,6 +62,8 @@ namespace LeetBot
                     });
 
                     services.AddSingleton<CommandService>();
+                    services.AddSingleton<ChallengePollingService>();
+
 
                     // your domain services
                     services.AddSingleton<IBot, Bot>();
