@@ -54,7 +54,7 @@ namespace LeetBot.ComponentHandlers.TeamChallenge
 
             // validation - this user is the creator of the thread FirstTeam.user.First
             var challengeId = component.Message.Id;
-            var teams = await _teamRepo.GetTeamsByChallengeIdAsync((long)challengeId);
+            var teams = await _teamRepo.GetTeamsByChallengeIdAsync(challengeId);
             //var creator = teams
             //    .FirstOrDefault()?
             //    .Users
@@ -80,7 +80,7 @@ namespace LeetBot.ComponentHandlers.TeamChallenge
             var mediumProblem = await _leetCodeService.GetRandomProblemAsync("medium", null);
             var hardProblem = await _leetCodeService.GetRandomProblemAsync("hard", null);
 
-            var challenge = await _teamChallengeRepo.GetTeamChallengeByIdAsync((long)challengeId);
+            var challenge = await _teamChallengeRepo.GetTeamChallengeByIdAsync(challengeId);
 
             challenge.EasyProblemTitleSlug = easyProblem;
             challenge.MediumProblemTitleSlug = mediumProblem;

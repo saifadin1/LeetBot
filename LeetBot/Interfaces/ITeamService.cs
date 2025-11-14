@@ -1,4 +1,5 @@
-﻿using Discord.WebSocket;
+﻿using Discord;
+using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,5 +12,8 @@ namespace LeetBot.Interfaces
     {
         Task HandleJoinTeamAsync(SocketMessageComponent component, int teamNumber);
         Task HandleDifficultyButton(SocketMessageComponent component, SocketThreadChannel threadChannel, string difficulty);
+        Task<Embed> BuildTeamChallengeResultEmbedAsync(ulong challengeId);
+
+
     }
 }

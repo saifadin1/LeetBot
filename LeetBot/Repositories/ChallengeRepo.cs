@@ -132,5 +132,12 @@ namespace LeetBot.Repositories
 
             throw new InvalidOperationException("you are not part of any active challenge");
         }
+
+        public async Task<List<Challenge>> GetExpiredChallengesAsync()
+        {
+            return await _dbContext.Challenges
+                .Where(c => c.IsActive && c.EndedAt <= DateTime.UtcNow)
+                .ToListAsync();
+        }
     }
 }

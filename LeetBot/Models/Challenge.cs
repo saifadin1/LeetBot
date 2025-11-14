@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LeetBot.Models
 {
-    public class Challenge
+    public class Challenge : BaseChallenge
     {
         public ulong Id { get; set; }
         public string? TitleSlug { get; set; }
@@ -23,7 +23,7 @@ namespace LeetBot.Models
         public DateTime EndedAt { get; set; }
 
 
-        public bool IsActive { get; set; } = true;
+
 
     }
 }

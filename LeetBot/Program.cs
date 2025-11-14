@@ -36,7 +36,7 @@ namespace LeetBot
                 {
                     logging.ClearProviders();
                     logging.AddConsole();
-                    logging.SetMinimumLevel(LogLevel.Error);
+                    logging.SetMinimumLevel(LogLevel.Information);
                 })
                 .ConfigureServices((context, services) =>
                 {
@@ -62,7 +62,6 @@ namespace LeetBot
                     });
 
                     services.AddSingleton<CommandService>();
-                    services.AddSingleton<ChallengePollingService>();
 
 
                     // your domain services
@@ -99,6 +98,7 @@ namespace LeetBot
 
                     // Hosted service that starts/stops the bot
                     services.AddHostedService<BotHostedService>();
+                    services.AddHostedService<ChallengePollingService>();
                 })
                 .UseConsoleLifetime()
                 .Build();

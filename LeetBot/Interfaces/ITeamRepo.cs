@@ -11,9 +11,9 @@ namespace LeetBot.Interfaces
 {
     public interface ITeamRepo
     {
-        Task<Team> CreateTeamAsync(long challengeId);
+        Task<Team> CreateTeamAsync(ulong challengeId);
         Task<Team?> GetTeamByIdAsync(long teamId);
-        Task<List<Team>> GetTeamsByChallengeIdAsync(long challengeId);
+        Task<List<Team>> GetTeamsByChallengeIdAsync(ulong challengeId);
         Task AddUserToTeamAsync(long teamId, User user);
         Task RemoveUserFromTeamAsync(long? teamId, User user);
         Task DeleteTeamAsync(long teamId);

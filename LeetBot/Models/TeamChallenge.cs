@@ -1,8 +1,8 @@
 ﻿namespace LeetBot.Models
 {
-    public class TeamChallenge
+    public class TeamChallenge : BaseChallenge
     {
-        public long Id { get; set; }
+        public ulong Id { get; set; }
         public ulong? GuildId { get; set; }
         public ulong ChannelId { get; set; }
         public DateTime StartedAt { get; set; }
@@ -19,6 +19,5 @@
         public int Problem2SolvedByTeam { get; set; } = 0;
         public int Problem3SolvedByTeam { get; set; } = 0;
 
-        public bool IsActive { get; set; } = true;
     }
 }
