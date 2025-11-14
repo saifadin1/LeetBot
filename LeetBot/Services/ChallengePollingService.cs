@@ -4,6 +4,7 @@ using LeetBot.Data;
 using LeetBot.Interfaces;
 using LeetBot.Models;
 using LeetBot.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -71,6 +72,18 @@ namespace LeetBot.Services
 
                         foreach (var teamChallenge in expiredTeamChallenges)
                         {
+                            var teamsToDisband = await teamRepo.GetTeamsByChallengeIdAsync(teamChallenge.Id);
+
+                            foreach (var team in teamsToDisband)
+                            {
+                                foreach (var user in team.Users)
+                                {
+                                    user.TeamId = null;
+                                    user.IsFree = true;
+                                }
+
+                                _logger.LogInformation("Disbanded Team {TeamId} and freed {UserCount} users.", team.Id, team.Users.Count);
+                            }
                             await ProcessExpiredChallenge(
                                teamChallenge.Id,
                                teamChallenge.ChannelId,
@@ -82,19 +95,6 @@ namespace LeetBot.Services
                            );
 
 
-                            var teamsToDisband = await teamRepo.GetTeamsByChallengeIdAsync(teamChallenge.Id);
-
-                            foreach (var team in teamsToDisband)
-                            {
-                                foreach (var user in team.Users)
-                                {
-                                    user.TeamId = null;
-                                    user.IsFree = true;
-                                }
-
-                                dbContext.Remove(team);
-                                _logger.LogInformation("Disbanded Team {TeamId} and freed {UserCount} users.", team.Id, team.Users.Count);
-                            }
                         }
 
 
@@ -110,7 +110,7 @@ namespace LeetBot.Services
                     _logger.LogError(ex, "Error occurred in Challenge Polling Service.");
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(60), stoppingToken);
             }
 
             _logger.LogInformation("Challeneg polling service is stopping..");

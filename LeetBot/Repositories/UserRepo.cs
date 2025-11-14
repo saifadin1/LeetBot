@@ -50,7 +50,9 @@ namespace LeetBot.Repositories
 
         public async Task<bool> IsUserFreeAsync(IDiscordInteraction interaction)
         {
-            var user = await _dbContext.Users.FindAsync($"{interaction.User.Id}-{interaction.GuildId}");
+            var user = await _dbContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == $"{interaction.User.Id}-{interaction.GuildId}");
             if (user == null)
             {
                 return true; // User is free if not found

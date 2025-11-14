@@ -24,7 +24,7 @@ namespace LeetBot.Repositories
                 GuildId = interaction.GuildId,
                 ChannelId = message.Channel.Id,
                 StartedAt = DateTime.UtcNow,
-                EndedAt = DateTime.UtcNow + TimeSpan.FromSeconds(5),
+                EndedAt = DateTime.UtcNow + TimeSpan.FromMinutes(30),
             };
 
             await _dbContext.TeamChallenges.AddAsync(teamChallenge);
