@@ -1,9 +1,10 @@
 ﻿namespace LeetBot.Models
 {
-    public class TeamChallenge
+    public class TeamChallenge : BaseChallenge
     {
-        public long Id { get; set; }
+        public ulong Id { get; set; }
         public ulong? GuildId { get; set; }
+        public ulong ChannelId { get; set; }
         public DateTime StartedAt { get; set; }
         public DateTime EndedAt { get; set; }
         public ICollection<Team> Teams { get; set; } = new List<Team>();
@@ -17,5 +18,6 @@
         public int Problem1SolvedByTeam { get; set; } = 0;
         public int Problem2SolvedByTeam { get; set; } = 0;
         public int Problem3SolvedByTeam { get; set; } = 0;
+
     }
 }

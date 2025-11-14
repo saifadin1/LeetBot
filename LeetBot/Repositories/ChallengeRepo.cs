@@ -24,9 +24,12 @@ namespace LeetBot.Repositories
             {
                 Id = message.Id,               // Message ID is used as the challenge ID
                 ChallengerId = TextProcessor.UserId(userId, interaction.GuildId),
+                ChannelId = interaction.ChannelId ?? 0,
                 Difficulty = difficulty,
                 GuildId = interaction.GuildId,
                 Topic = topic,
+                StartedAt = DateTime.UtcNow,
+                EndedAt = DateTime.UtcNow + TimeSpan.FromMinutes(30)
             };
 
             await _dbContext.Challenges.AddAsync(challenge);
@@ -128,6 +131,13 @@ namespace LeetBot.Repositories
 
 
             throw new InvalidOperationException("you are not part of any active challenge");
+        }
+
+        public async Task<List<Challenge>> GetExpiredChallengesAsync()
+        {
+            return await _dbContext.Challenges
+                .Where(c => c.IsActive && c.EndedAt <= DateTime.UtcNow)
+                .ToListAsync();
         }
     }
 }

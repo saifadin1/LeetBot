@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LeetBot.Models
 {
-    public class Challenge
+    public class Challenge : BaseChallenge
     {
         public ulong Id { get; set; }
         public string? TitleSlug { get; set; }
@@ -18,6 +18,12 @@ namespace LeetBot.Models
         public string? OpponentId { get; set; }
         public User? Opponent { get; set; }
         public ulong? GuildId { get; set; }
+        public ulong ChannelId { get; set; }
         public DateTime StartedAt { get; set; }
+        public DateTime EndedAt { get; set; }
+
+
+
+
     }
 }

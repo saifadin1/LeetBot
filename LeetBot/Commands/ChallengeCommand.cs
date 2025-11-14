@@ -80,7 +80,7 @@ namespace LeetBot.Commands
             }
 
             // check if the user is already in a challenge
-            if (! await _userRepo.IsUserFreeAsync(command))
+            if (!await _userRepo.IsUserFreeAsync(command))
             {
                 await command.RespondAsync("You are already in a challenge.", ephemeral: true);
                 return;

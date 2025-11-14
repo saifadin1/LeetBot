@@ -22,4 +22,6 @@ public interface IChallengeRepo
     Task<Challenge> GetChallengeByUserId(string userId);
     Task<bool> isEmpty(ulong id);
 
+    Task<List<Challenge>> GetExpiredChallengesAsync();
+
 }

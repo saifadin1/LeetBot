@@ -4,7 +4,10 @@ using LeetBot.ComponentHandlers.TeamChallenge.Joins;
 using LeetBot.DTOs;
 using LeetBot.Interfaces;
 using LeetBot.Models;
+using LeetBot.Repositories;
 using Microsoft.Extensions.Logging;
+using System.Drawing;
+using Color = Discord.Color;
 
 namespace LeetBot.Services
 {
@@ -29,6 +32,91 @@ namespace LeetBot.Services
             _leet = leet;
         }
 
+        public async Task<Embed> BuildTeamChallengeResultEmbedAsync(ulong challengeId)
+        {
+            var challenge = await _teamChallengeRepo.GetTeamChallengeByIdAsync(challengeId);
+
+            if (challenge == null)
+            {
+                _logger.LogWarning("Could not find TeamChallenge {ChallengeId} to build results.", challengeId);
+                return new EmbedBuilder()
+                    .WithTitle("Challenge Not Found")
+                    .WithDescription($"Could not calculate results for challenge {challengeId} as it was not found.")
+                    .WithColor(Color.Red)
+                    .Build();
+            }
+
+            string title;
+            string description;
+            Color color;
+
+            var team1Score = challenge.Team1CurrentScore;
+            var team2Score = challenge.Team2CurrentScore;
+
+            if (team1Score > team2Score)
+            {
+                title = "Team 1 is Victorious! 🏆";
+                color = new Color(88, 101, 242);
+                description = $"Team 1 wins with a final score of **{team1Score}** to **{team2Score}**!";
+            }
+            else if (team2Score > team1Score)
+            {
+                title = "Team 2 is Victorious! 🏆";
+                color = new Color(237, 66, 69);
+                description = $"Team 2 wins with a final score of **{team2Score}** to **{team1Score}**!";
+            }
+            else
+            {
+                title = "It's a Draw! 🤝";
+                color = Color.LightGrey;
+                description = $"Both teams tied with a score of **{team1Score}**!";
+            }
+
+            var embedBuilder = new EmbedBuilder()
+                .WithTitle(title)
+                .WithDescription(description)
+                .WithColor(color)
+                .WithTimestamp(DateTimeOffset.UtcNow)
+                .WithFooter("Challenge complete");
+
+            embedBuilder.AddField("Easy Problem", challenge.EasyProblemTitleSlug ?? "Not Set", inline: true);
+            embedBuilder.AddField("Medium Problem", challenge.MediumProblemTitleSlug ?? "Not Set", inline: true);
+            embedBuilder.AddField("Hard Problem", challenge.HardProblemTitleSlug ?? "Not Set", inline: true);
+
+
+            if (challenge.Teams != null && challenge.Teams.Count >= 2)
+            {
+                var teams = challenge.Teams.ToList();
+                // Assuming the order is consistent (e.g., Team 1 is first in list)
+                var team1Users = teams[0].Users;
+                var team2Users = teams[1].Users;
+
+                var team1Members = team1Users.Any() ? string.Join("\n", team1Users.Select(u => u.Mention)) : "No members";
+                var team2Members = team2Users.Any() ? string.Join("\n", team2Users.Select(u => u.Mention)) : "No members";
+
+                embedBuilder.AddField("\u200B", "\u200B"); // Blank field for spacing
+
+                embedBuilder.AddField("Team 1 Members", team1Members, inline: true);
+                embedBuilder.AddField("Team 1 Score", $"**{challenge.Team1CurrentScore}**", inline: true);
+                embedBuilder.AddField("\u200B", "\u200B", inline: true); // invisible spacer
+
+                embedBuilder.AddField("Team 2 Members", team2Members, inline: true);
+                embedBuilder.AddField("Team 2 Score", $"**{challenge.Team2CurrentScore}**", inline: true);
+                embedBuilder.AddField("\u200B", "\u200B", inline: true); // invisible spacer
+            }
+            else
+            {
+                _logger.LogWarning("Challenge {ChallengeId} did not have 2 teams with users included.", challengeId);
+                embedBuilder.AddField("\u200B", "\u200B"); // Blank field for spacing
+                embedBuilder.AddField("Team Scores", $"Team 1: **{challenge.Team1CurrentScore}**\nTeam 2: **{challenge.Team2CurrentScore}**");
+                embedBuilder.AddField("Team Info", "Could not retrieve full team member information.");
+            }
+
+
+
+            return embedBuilder.Build();
+        }
+
         public async Task HandleDifficultyButton(SocketMessageComponent component, SocketThreadChannel threadChannel, string difficulty)
         {
 
@@ -47,7 +135,7 @@ namespace LeetBot.Services
             //}
 
             // get all users last submissions
-            var challenge = await _teamChallengeRepo.GetTeamChallengeByIdAsync((long)component.Message.Id);
+            var challenge = await _teamChallengeRepo.GetTeamChallengeByIdAsync(component.Message.Id);
 
             if (challenge == null)
             {
@@ -231,7 +319,7 @@ namespace LeetBot.Services
 
             var teamChallengeId = component.Message.Id;
 
-            var teams = await _teamChallengeRepo.GetTeamsByTeamChallengeIdAsync((long)teamChallengeId);
+            var teams = await _teamChallengeRepo.GetTeamsByTeamChallengeIdAsync(teamChallengeId);
             var user = await _userRepo.GetUserByIdAsync($"{component.User.Id}-{component.GuildId}");
 
             if (teamNumber == 1)

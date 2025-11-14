@@ -14,7 +14,7 @@ namespace LeetBot.Repositories
             _dbContext = dbContext;
         }
 
-        public async Task<Team> CreateTeamAsync(long challengeId)
+        public async Task<Team> CreateTeamAsync(ulong challengeId)
         {
             var team = new Team
             {
@@ -34,7 +34,7 @@ namespace LeetBot.Repositories
                 .FirstOrDefaultAsync(t => t.Id == teamId);
         }
 
-        public async Task<List<Team>> GetTeamsByChallengeIdAsync(long challengeId)
+        public async Task<List<Team>> GetTeamsByChallengeIdAsync(ulong challengeId)
         {
             return await _dbContext.Teams
                 .Where(t => t.ChallengeId == challengeId)

@@ -20,9 +20,11 @@ namespace LeetBot.Repositories
         {
             var teamChallenge = new TeamChallenge
             {
-                Id = (long)message.Id,
+                Id = message.Id,
                 GuildId = interaction.GuildId,
-                StartedAt = DateTime.UtcNow
+                ChannelId = message.Channel.Id,
+                StartedAt = DateTime.UtcNow,
+                EndedAt = DateTime.UtcNow + TimeSpan.FromSeconds(5),
             };
 
             await _dbContext.TeamChallenges.AddAsync(teamChallenge);
@@ -30,7 +32,7 @@ namespace LeetBot.Repositories
             return teamChallenge;
         }
 
-        public async Task<TeamChallenge?> GetTeamChallengeByIdAsync(long id)
+        public async Task<TeamChallenge?> GetTeamChallengeByIdAsync(ulong id)
         {
             return await _dbContext.TeamChallenges
                 .Include(tc => tc.Teams)
@@ -47,7 +49,7 @@ namespace LeetBot.Repositories
                 .ToListAsync();
         }
 
-        public async Task AddTeamToChallengeAsync(long teamChallengeId, Team team)
+        public async Task AddTeamToChallengeAsync(ulong teamChallengeId, Team team)
         {
             var teamChallenge = await _dbContext.TeamChallenges
                 .Include(tc => tc.Teams)
@@ -60,7 +62,7 @@ namespace LeetBot.Repositories
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task RemoveTeamFromChallengeAsync(long teamChallengeId, Team team)
+        public async Task RemoveTeamFromChallengeAsync(ulong teamChallengeId, Team team)
         {
             var teamChallenge = await _dbContext.TeamChallenges
                 .Include(tc => tc.Teams)
@@ -73,7 +75,7 @@ namespace LeetBot.Repositories
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task DeleteTeamChallengeAsync(long id)
+        public async Task DeleteTeamChallengeAsync(ulong id)
         {
             var teamChallenge = await _dbContext.TeamChallenges.FindAsync(id);
 
@@ -89,7 +91,7 @@ namespace LeetBot.Repositories
             return await _dbContext.SaveChangesAsync();
         }
 
-        public async Task<List<Team>> GetTeamsByTeamChallengeIdAsync(long teamChallengeId)
+        public async Task<List<Team>> GetTeamsByTeamChallengeIdAsync(ulong teamChallengeId)
         {
             var teamChallenge = await _dbContext.TeamChallenges
                 .Include(tc => tc.Teams)
@@ -100,6 +102,13 @@ namespace LeetBot.Repositories
                 throw new KeyNotFoundException($"TeamChallenge with ID {teamChallengeId} not found.");
 
             return teamChallenge.Teams.ToList();
+        }
+
+        public async Task<List<TeamChallenge>> GetExpiredChallengesAsync()
+        {
+            return await _dbContext.TeamChallenges
+                .Where(tc => tc.IsActive && tc.EndedAt <= DateTime.UtcNow)
+                .ToListAsync();
         }
     }
 }
