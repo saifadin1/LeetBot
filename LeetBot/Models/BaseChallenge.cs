@@ -8,6 +8,6 @@ namespace LeetBot.Models
 {
     public class BaseChallenge
     {
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; } = false;
     }
 }

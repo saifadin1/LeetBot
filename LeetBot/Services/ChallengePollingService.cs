@@ -97,7 +97,7 @@ namespace LeetBot.Services
                            );
 
 
-                            challengeRepo.RemoveChallenge(challenge.Id);
+                            await challengeRepo.RemoveChallengeAsync(challenge.Id);
                         }
 
 

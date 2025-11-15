@@ -49,7 +49,7 @@ namespace LeetBot.ComponentHandlers.Challenge
                 var isEmpty = await _challengeRepo.isEmpty(challenge.Id);
                 if (isEmpty)
                 {
-                    _challengeRepo.RemoveChallenge(challenge.Id);
+                    await _challengeRepo.RemoveChallengeAsync(challenge.Id);
                     await _challengeRepo.SaveChangesAsync();
 
 

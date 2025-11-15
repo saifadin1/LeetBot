@@ -17,7 +17,7 @@ public interface IChallengeRepo
     Task<Challenge> GetChallengeById(ulong id);
     Task<bool> IsUserChallenging(IDiscordInteraction interaction);
     Task<int> SaveChangesAsync();
-    void RemoveChallenge(ulong id);
+    Task RemoveChallengeAsync(ulong id);
     Task RemoveChallenger(string userId);
     Task<Challenge> GetChallengeByUserId(string userId);
     Task<bool> isEmpty(ulong id);

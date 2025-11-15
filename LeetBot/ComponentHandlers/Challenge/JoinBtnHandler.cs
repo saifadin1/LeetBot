@@ -26,6 +26,9 @@ namespace LeetBot.ComponentHandlers.Challenge
 
         public async Task ExecuteAsync(SocketMessageComponent component, SocketThreadChannel threadChannel)
         {
+            await component.DeferAsync(); 
+
+
             if (threadChannel is null)
             {
                 _logger.LogError("Channel is null");
@@ -90,7 +93,6 @@ namespace LeetBot.ComponentHandlers.Challenge
                 .WithButton($"leave", "leave_btn", ButtonStyle.Danger)
                 .WithButton($"finished🏁", "finish_btn", ButtonStyle.Success);
                 
-            await component.DeferAsync();
 
             await component.Message.ModifyAsync(msg =>
             {
@@ -98,28 +100,9 @@ namespace LeetBot.ComponentHandlers.Challenge
                 msg.Components = components.Build();
             });
 
-            
+            challenge.IsActive = true;
+            await _challengeRepo.SaveChangesAsync();
 
-
-
-            // remove the prev message
-            //await interaction.Message.DeleteAsync();
-
-            // save the current message id 
-
-            // listen for two competitors accounts to determine the winner 
-
-            //try
-            //{
-            //    var cts = new CancellationTokenSource();
-            //    _ = Task.Run(() => _leetCodeService.MonitorChallengeAsync(component, challenge, threadChannel, cts.Token));
-            //}
-            //catch (Exception ex)
-            //{
-            //    _logger.LogError(ex, "Error while monitoring challenge");
-            //    await component.FollowupAsync($"{ex.Message}", ephemeral: true);
-            //    return;
-            //}
         }
     }
 }

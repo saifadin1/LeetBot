@@ -484,7 +484,7 @@ namespace LeetBot.Services
 
                 //await threadChannel.DeleteAsync();
 
-                _challengeRepo.RemoveChallenge(challenge.Id);
+                await _challengeRepo.RemoveChallengeAsync(challenge.Id);
                 challenge.Challenger.IsFree = true;
                 challenge.Opponent.IsFree = true;
                 await _challengeRepo.SaveChangesAsync();

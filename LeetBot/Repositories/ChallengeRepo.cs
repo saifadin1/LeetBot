@@ -64,13 +64,14 @@ namespace LeetBot.Repositories
             return await _dbContext.SaveChangesAsync();
         }
 
-        public void RemoveChallenge(ulong id)
+        public async Task RemoveChallengeAsync(ulong id)
         {
-            var challenge = _dbContext.Challenges.Find(id);
+            var challenge = await _dbContext.Challenges.FindAsync(id);
             if (challenge != null)
             {
                 _dbContext.Challenges.Remove(challenge);
             }
+            await _dbContext.SaveChangesAsync();
         }
 
         public async Task<bool> IsUserChallenging(IDiscordInteraction interaction)

@@ -86,6 +86,8 @@ namespace LeetBot.ComponentHandlers.TeamChallenge
             challenge.MediumProblemTitleSlug = mediumProblem;
             challenge.HardProblemTitleSlug = hardProblem;
 
+            challenge.IsActive = true;
+
             await _teamChallengeRepo.SaveChangesAsync();
 
             // modify the message 
