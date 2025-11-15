@@ -95,6 +95,8 @@ namespace LeetBot
                     services.AddScoped<IUserRepo, UserRepo>();
                     services.AddScoped<ITeamRepo, TeamRepo>();
                     services.AddScoped<ITeamChallengeRepo, TeamChallengeRepo>();
+                    services.AddScoped<ISoloChallengeService, SoloChallengeService>();
+
 
                     // Hosted service that starts/stops the bot
                     services.AddHostedService<BotHostedService>();

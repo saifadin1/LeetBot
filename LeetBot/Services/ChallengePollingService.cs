@@ -62,12 +62,44 @@ namespace LeetBot.Services
                         var leetCodeService = scope.ServiceProvider.GetRequiredService<ILeetCodeService>();
                         var teamRepo = scope.ServiceProvider.GetRequiredService<ITeamRepo>();
                         var userRepo = scope.ServiceProvider.GetRequiredService<IUserRepo>();
+                        var soloChallengeService = scope.ServiceProvider.GetRequiredService<ISoloChallengeService>();
 
                         var expiredSoloChallenges = await challengeRepo.GetExpiredChallengesAsync();
                         var expiredTeamChallenges = await teamChallengeRepo.GetExpiredChallengesAsync();
 
 
-                        // TODO: SOLO CHALLENGE (DETERMINE THE RESPONSEABLITY)
+
+
+                        foreach (var challenge in expiredSoloChallenges)
+                        {
+
+
+                            // unlock challenger and opponent
+                            if (challenge.ChallengerId != null)
+                            {
+                                await userRepo.UnlockUserAsync(challenge.ChallengerId);
+                            }
+                            if (challenge.OpponentId != null)
+                            {
+                                await userRepo.UnlockUserAsync(challenge.OpponentId);
+                            }
+
+
+
+                            await ProcessExpiredChallenge(
+                               challenge.Id,
+                               challenge.ChannelId,
+                               async () =>
+                               {
+                                   return await soloChallengeService.BuildTeamChallengeResultEmbedAsync(challenge.Id);
+                               },
+                               challenge
+                           );
+
+
+                            challengeRepo.RemoveChallenge(challenge.Id);
+                        }
+
 
 
                         foreach (var teamChallenge in expiredTeamChallenges)
@@ -95,6 +127,7 @@ namespace LeetBot.Services
                            );
 
 
+                            await teamChallengeRepo.DeleteTeamChallengeAsync(teamChallenge.Id);
                         }
 
 
