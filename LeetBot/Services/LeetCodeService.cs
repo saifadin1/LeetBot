@@ -636,5 +636,71 @@ namespace LeetBot.Services
             return avatarUrl;
         }
 
+        public async Task<UserBadgesResponseDTO> GetUserBadgesAsync(string username)
+        {
+            var query = new
+            {
+                operationName = "userBadges",
+                query = """
+            query userBadges($username: String!) {
+              matchedUser(username: $username) {
+                badges {
+                  id
+                  name
+                  shortName
+                  displayName
+                  icon
+                  creationDate
+                }
+              }
+            }
+            """,
+                variables = new { username = username }
+            };
+
+            var jsonContent = JsonConvert.SerializeObject(query);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("https://leetcode.com/graphql", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"LeetCode API call failed. Status: {response.StatusCode}. Body: {error}");
+            }
+
+            var responseString = await response.Content.ReadAsStringAsync();
+            dynamic data = JsonConvert.DeserializeObject(responseString);
+
+
+            var matchedUser = data?.data?.matchedUser;
+
+            if (matchedUser == null)
+            {
+                return new UserBadgesResponseDTO { LeetCodeUsername = username };
+            }
+
+            var result = new UserBadgesResponseDTO
+            {
+                LeetCodeUsername = username
+            };
+
+            if (matchedUser.badges != null)
+            {
+                foreach (var b in matchedUser.badges)
+                {
+                    result.Badges.Add(new BadgeDTO
+                    {
+                        DisplayName = b.displayName,
+                        ShortName = b.shortName,
+                        IconUrl = b.icon,
+                        CreationDate = b.creationDate
+                    });
+                }
+            }
+
+            return result;
+        }
+
     }
 }
