@@ -29,7 +29,7 @@ namespace LeetBot.Repositories
                 GuildId = interaction.GuildId,
                 Topic = topic,
                 StartedAt = DateTime.UtcNow,
-                EndedAt = DateTime.UtcNow + TimeSpan.FromSeconds(5)
+                EndedAt = DateTime.UtcNow + TimeSpan.FromMinutes(45)
             };
 
             await _dbContext.Challenges.AddAsync(challenge);
