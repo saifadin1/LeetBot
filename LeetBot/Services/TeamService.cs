@@ -162,9 +162,23 @@ namespace LeetBot.Services
             }
 
             // make sure this problem not solved yet
-            if (challenge.Problem3SolvedByTeam != 0)
+            //if (challenge.Problem3SolvedByTeam != 0)
+            //{
+            //    await component.FollowupAsync("This problem is already solved by one of the teams", ephemeral: true);
+            //    return;
+            //}
+
+            bool isAlreadySolved = false;
+            switch (difficulty.ToLower())
             {
-                await component.FollowupAsync("This problem is already solved by one of the teams", ephemeral: true);
+                case "easy": isAlreadySolved = challenge.Problem1SolvedByTeam != 0; break;
+                case "medium": isAlreadySolved = challenge.Problem2SolvedByTeam != 0; break;
+                case "hard": isAlreadySolved = challenge.Problem3SolvedByTeam != 0; break;
+            }
+
+            if (isAlreadySolved)
+            {
+                await component.FollowupAsync("This problem is already solved...", ephemeral: true);
                 return;
             }
 
@@ -248,8 +262,8 @@ namespace LeetBot.Services
             else
             {
                 firstSolverTeam = 2;
-                challenge.Team1CurrentScore += scoreToBeAdded;
-                challenge.Team2MaxPossibleScore -= scoreToBeAdded;
+                challenge.Team2CurrentScore += scoreToBeAdded;
+                challenge.Team1MaxPossibleScore -= scoreToBeAdded;
                 switch (difficulty.ToLower())
                 {
                     case "easy":
@@ -264,6 +278,7 @@ namespace LeetBot.Services
                 }
             }
 
+            await _teamChallengeRepo.SaveChangesAsync();
             await component.FollowupAsync($"the {difficulty.ToUpper()} problem solved by team {(firstSolverTeam == 1 ? "1️⃣ " : "2️⃣ ")}");
 
             // check if the challenge is finished
@@ -289,12 +304,14 @@ namespace LeetBot.Services
                 {
                     msg.Embed = new EmbedBuilder()
                         .WithTitle("Challenge finished")
-                        .WithDescription($"Team 1 wins with score: {challenge.Team1CurrentScore} ")
+                        .WithDescription($"Team 2 wins with score: {challenge.Team1CurrentScore} ")
                         .WithColor(Color.Green)
                         .Build();
                 });
                 return;
             }
+
+            //await _teamChallengeRepo.SaveChangesAsync();
         }
 
         public async Task HandleJoinTeamAsync(SocketMessageComponent component, int teamNumber)
