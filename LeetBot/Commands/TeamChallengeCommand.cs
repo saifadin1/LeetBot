@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using LeetBot.Helpers;
 using LeetBot.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -52,10 +53,9 @@ namespace LeetBot.Commands
             await _userRepo.LockUserAsync(command);
 
 
-            var loadingEmoji = ":Loading:";
             var embed = new EmbedBuilder()
                 .WithTitle("Waiting for players...")
-                .WithDescription($"{loadingEmoji}")
+                .WithDescription("🔍")
                 .WithColor(Color.Blue);
 
             var components = new ComponentBuilder()
@@ -88,7 +88,8 @@ namespace LeetBot.Commands
                 var firstTeam = await _teamRepo.CreateTeamAsync(challenge.Id);
                 var secondTeam = await _teamRepo.CreateTeamAsync(challenge.Id);
             
-                var curUser = await _userRepo.GetUserByIdAsync($"{command.User.Id}-{command.GuildId}");
+                var curUser = await _userRepo.GetUserByIdAsync(TextProcessor.UserId(command.User.Id, command.GuildId));
+
                 await _teamRepo.AddUserToTeamAsync(firstTeam.Id, curUser);
             }
             catch (Exception ex)

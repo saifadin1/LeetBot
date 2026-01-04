@@ -84,7 +84,8 @@ namespace LeetBot
                     services.AddScoped<StartTeamBtnHandler>();
                     services.AddScoped<leaveTeamBtnHandler>();
                     services.AddScoped<EasyBtnHandler>();
-                    services.AddScoped<MediumBtnHandler>();
+                    services.AddScoped<Medium1BtnHandler>();
+                    services.AddScoped<Medium2BtnHandler>();
                     services.AddScoped<HardBtnHandler>();
 
 

@@ -36,7 +36,6 @@ namespace LeetBot.ComponentHandlers.TeamChallenge
         {
             await component.DeferAsync();
 
-            // modify embid to show challenge is loading (while fetching problems)
             var loadingEmbed = new EmbedBuilder()
                  .WithTitle("Starting Team Challenge...")
                  .WithDescription("Fetching problems, please wait...")
@@ -45,64 +44,48 @@ namespace LeetBot.ComponentHandlers.TeamChallenge
             await component.ModifyOriginalResponseAsync(msg =>
             {
                 msg.Embed = loadingEmbed.Build();
-                // remove the button to prevent multiple clicks
                 msg.Components = new ComponentBuilder().Build();
-
             });
 
-
-
-            // validation - this user is the creator of the thread FirstTeam.user.First
             var challengeId = component.Message.Id;
             var teams = await _teamRepo.GetTeamsByChallengeIdAsync(challengeId);
-            //var creator = teams
-            //    .FirstOrDefault()?
-            //    .Users
-            //    .FirstOrDefault();
 
-            // validation - user is the creator of the thread
-
-            //if (creator is null || creator.Id != TextProcessor.UserId(component.User.Id, component.GuildId))
-            //{
-            //    await component.FollowupAsync("Only the creator of the challenge can start it", ephemeral: true);
-            //    return;
-            //}
-
-            // validation - both teams have 2 users
-            //if (teams.First().Users.Count != 2 && teams.Last().Users.Count != 2)
-            //{
-            //    await component.FollowupAsync("Both teams must have 2 users to start the challenge", ephemeral: true);
-            //    return;
-            //}
-
-            
+            // Fetch all problems
             var easyProblem = await _leetCodeService.GetRandomProblemAsync("easy", null);
-            var mediumProblem = await _leetCodeService.GetRandomProblemAsync("medium", null);
+            var mediumProblem1 = await _leetCodeService.GetRandomProblemAsync("medium", null);
+            var mediumProblem2 = await _leetCodeService.GetRandomProblemAsync("medium", null);
             var hardProblem = await _leetCodeService.GetRandomProblemAsync("hard", null);
 
             var challenge = await _teamChallengeRepo.GetTeamChallengeByIdAsync(challengeId);
 
             challenge.EasyProblemTitleSlug = easyProblem;
-            challenge.MediumProblemTitleSlug = mediumProblem;
+            challenge.MediumProblem1TitleSlug = mediumProblem1;
+            challenge.MediumProblem2TitleSlug = mediumProblem2;
+            while (mediumProblem2 == mediumProblem1)
+            {
+                mediumProblem2 = await _leetCodeService.GetRandomProblemAsync("medium", null);
+            }
             challenge.HardProblemTitleSlug = hardProblem;
-
             challenge.IsActive = true;
 
             await _teamChallengeRepo.SaveChangesAsync();
 
-            // modify the message 
-    
             var embed = new EmbedBuilder()
-                .WithTitle("Team Challenge started!")
-                .WithDescription($"**Easy:** [{easyProblem}]({TextProcessor.ProblemLink(easyProblem)})\n" +
-                                 $"**Medium:** [{mediumProblem}]({TextProcessor.ProblemLink(mediumProblem)})\n" +
-                                 $"**Hard:** [{hardProblem}]({TextProcessor.ProblemLink(hardProblem)})")
-                .WithColor(Color.Blue);
+                .WithTitle("Team Challenge Started! 🎯")
+                .WithDescription(
+                    $"**Easy (100 pts):** [{easyProblem}]({TextProcessor.ProblemLink(easyProblem)})\n" +
+                    $"**Medium 1 (200 pts):** [{mediumProblem1}]({TextProcessor.ProblemLink(mediumProblem1)})\n" +
+                    $"**Medium 2 (200 pts):** [{mediumProblem2}]({TextProcessor.ProblemLink(mediumProblem2)})\n" +
+                    $"**Hard (400 pts):** [{hardProblem}]({TextProcessor.ProblemLink(hardProblem)})\n\n" +
+                    $"**Total Points:** 900")
+                .WithColor(Color.Blue)
+                .WithFooter("Click a button when you complete a problem!");
 
             var components = new ComponentBuilder()
-                .WithButton("Easy", "teamEasy", ButtonStyle.Primary)
-                .WithButton("Medium", "teamMedium", ButtonStyle.Primary)
-                .WithButton("Hard", "teamHard", ButtonStyle.Primary);
+                .WithButton("Easy", "teamEasy", ButtonStyle.Success)
+                .WithButton("Medium 1", "teamMedium1", ButtonStyle.Primary)
+                .WithButton("Medium 2", "teamMedium2", ButtonStyle.Primary)
+                .WithButton("Hard", "teamHard", ButtonStyle.Danger);
 
             await component.ModifyOriginalResponseAsync(msg =>
             {
