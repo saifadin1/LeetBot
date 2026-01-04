@@ -2,6 +2,7 @@
 using Discord.WebSocket;
 using LeetBot.ComponentHandlers.TeamChallenge.Joins;
 using LeetBot.DTOs;
+using LeetBot.Helpers;
 using LeetBot.Interfaces;
 using LeetBot.Models;
 using Microsoft.Extensions.Logging;
@@ -53,19 +54,19 @@ namespace LeetBot.Services
 
             if (team1Score > team2Score)
             {
-                title = "Team 1 is Victorious! 🏆";
-                color = new Color(88, 101, 242);
+                title = "🏆 Team 1 Victory!";
+                color = new Color(88, 101, 242); // Blurple
                 description = $"Team 1 wins with a final score of **{team1Score}** to **{team2Score}**!";
             }
             else if (team2Score > team1Score)
             {
-                title = "Team 2 is Victorious! 🏆";
-                color = new Color(237, 66, 69);
+                title = "🏆 Team 2 Victory!";
+                color = new Color(237, 66, 69); // Red
                 description = $"Team 2 wins with a final score of **{team2Score}** to **{team1Score}**!";
             }
             else
             {
-                title = "It's a Draw! 🤝";
+                title = "🤝 It's a Draw!";
                 color = Color.LightGrey;
                 description = $"Both teams tied with a score of **{team1Score}**!";
             }
@@ -74,13 +75,35 @@ namespace LeetBot.Services
                 .WithTitle(title)
                 .WithDescription(description)
                 .WithColor(color)
-                .WithTimestamp(DateTimeOffset.UtcNow)
-                .WithFooter("Challenge complete");
+                .WithCurrentTimestamp()
+                .WithFooter("Challenge Complete • Thanks for playing!");
 
-            embedBuilder.AddField("Easy Problem", challenge.EasyProblemTitleSlug ?? "Not Set", inline: true);
-            embedBuilder.AddField("Medium 1 Problem", challenge.MediumProblem1TitleSlug ?? "Not Set", inline: true);
-            embedBuilder.AddField("Medium 2 Problem", challenge.MediumProblem2TitleSlug ?? "Not Set", inline: true);
-            embedBuilder.AddField("Hard Problem", challenge.HardProblemTitleSlug ?? "Not Set", inline: true);
+            // Calculate duration
+            if (challenge.StartedAt != default && challenge.EndedAt != default)
+            {
+                var duration = challenge.EndedAt - challenge.StartedAt;
+                embedBuilder.AddField("⏱️ Duration",
+                    $"{duration.Hours}h {duration.Minutes}m {duration.Seconds}s",
+                    inline: true);
+            }
+
+            embedBuilder.AddField("\u200B", "\u200B", inline: false); // Spacer
+
+            // Add problem information with solved status
+            string GetProblemStatus(int solvedBy, string slug)
+            {
+                if (solvedBy == 0) return $"❌ [{slug}]({TextProcessor.ProblemLink(slug)}) - *Unsolved*";
+                return $"✅ [{slug}]({TextProcessor.ProblemLink(slug)}) - Team {solvedBy}";
+            }
+
+            embedBuilder.AddField("📝 Problems & Results",
+                $"🟢 **Easy (100 pts):** {GetProblemStatus(challenge.Problem1SolvedByTeam, challenge.EasyProblemTitleSlug)}\n" +
+                $"🟡 **Medium 1 (200 pts):** {GetProblemStatus(challenge.Problem2SolvedByTeam, challenge.MediumProblem1TitleSlug)}\n" +
+                $"🟡 **Medium 2 (200 pts):** {GetProblemStatus(challenge.Problem3SolvedByTeam, challenge.MediumProblem2TitleSlug)}\n" +
+                $"🔴 **Hard (400 pts):** {GetProblemStatus(challenge.Problem4SolvedByTeam, challenge.HardProblemTitleSlug)}",
+                inline: false);
+
+            embedBuilder.AddField("\u200B", "\u200B", inline: false); // Spacer
 
             if (challenge.Teams != null && challenge.Teams.Count >= 2)
             {
@@ -88,28 +111,78 @@ namespace LeetBot.Services
                 var team1Users = teams[0].Users;
                 var team2Users = teams[1].Users;
 
-                var team1Members = team1Users.Any() ? string.Join("\n", team1Users.Select(u => u.Mention)) : "No members";
-                var team2Members = team2Users.Any() ? string.Join("\n", team2Users.Select(u => u.Mention)) : "No members";
+                var team1Members = team1Users.Any() ? string.Join("\n", team1Users.Select(u => u.Mention)) : "*No members*";
+                var team2Members = team2Users.Any() ? string.Join("\n", team2Users.Select(u => u.Mention)) : "*No members*";
 
-                embedBuilder.AddField("\u200B", "\u200B");
+                embedBuilder.AddField("👥 Team 1", team1Members, inline: true);
+                embedBuilder.AddField("📊 Score", $"**{challenge.Team1CurrentScore}** pts", inline: true);
+                embedBuilder.AddField("\u200B", "\u200B", inline: true); // Spacer
 
-                embedBuilder.AddField("Team 1 Members", team1Members, inline: true);
-                embedBuilder.AddField("Team 1 Score", $"**{challenge.Team1CurrentScore}**", inline: true);
-                embedBuilder.AddField("\u200B", "\u200B", inline: true);
-
-                embedBuilder.AddField("Team 2 Members", team2Members, inline: true);
-                embedBuilder.AddField("Team 2 Score", $"**{challenge.Team2CurrentScore}**", inline: true);
-                embedBuilder.AddField("\u200B", "\u200B", inline: true);
-            }
-            else
-            {
-                _logger.LogWarning("Challenge {ChallengeId} did not have 2 teams with users included.", challengeId);
-                embedBuilder.AddField("\u200B", "\u200B");
-                embedBuilder.AddField("Team Scores", $"Team 1: **{challenge.Team1CurrentScore}**\nTeam 2: **{challenge.Team2CurrentScore}**");
-                embedBuilder.AddField("Team Info", "Could not retrieve full team member information.");
+                embedBuilder.AddField("👥 Team 2", team2Members, inline: true);
+                embedBuilder.AddField("📊 Score", $"**{challenge.Team2CurrentScore}** pts", inline: true);
+                embedBuilder.AddField("\u200B", "\u200B", inline: true); // Spacer
             }
 
             return embedBuilder.Build();
+        }
+
+        private async Task UpdateChallengeEmbed(SocketMessageComponent component, TeamChallenge challenge)
+        {
+            var teams = challenge.Teams.ToList();
+            var team1 = teams.FirstOrDefault();
+            var team2 = teams.LastOrDefault();
+
+            var team1Members = team1?.Users.Any() == true
+                ? string.Join(", ", team1.Users.Select(u => u.Mention))
+                : "*No members*";
+            var team2Members = team2?.Users.Any() == true
+                ? string.Join(", ", team2.Users.Select(u => u.Mention))
+                : "*No members*";
+
+            var embed = new EmbedBuilder()
+                .WithTitle("🎯 Team Challenge - IN PROGRESS")
+                .WithDescription("First team to solve wins the points!")
+                .WithColor(new Color(88, 101, 242))
+                .WithCurrentTimestamp();
+
+            embed.AddField("👥 Team 1", team1Members, inline: true);
+            embed.AddField("👥 Team 2", team2Members, inline: true);
+            embed.AddField("\u200B", "\u200B", inline: false);
+
+            // Build problems list with status
+            string GetProblemLine(string emoji, string name, int points, string slug, int solvedBy)
+            {
+                if (solvedBy == 0)
+                    return $"{emoji} **{name} ({points} pts):** [{slug}]({TextProcessor.ProblemLink(slug)})";
+                else
+                    return $"{emoji} ~~**{name} ({points} pts)**~~: [{slug}]({TextProcessor.ProblemLink(slug)}) ✅ Team {solvedBy}";
+            }
+
+            embed.AddField("📝 Problems",
+                GetProblemLine("🟢", "Easy", 100, challenge.EasyProblemTitleSlug, challenge.Problem1SolvedByTeam) + "\n" +
+                GetProblemLine("🟡", "Medium 1", 200, challenge.MediumProblem1TitleSlug, challenge.Problem2SolvedByTeam) + "\n" +
+                GetProblemLine("🟡", "Medium 2", 200, challenge.MediumProblem2TitleSlug, challenge.Problem3SolvedByTeam) + "\n" +
+                GetProblemLine("🔴", "Hard", 400, challenge.HardProblemTitleSlug, challenge.Problem4SolvedByTeam),
+                inline: false);
+
+            embed.AddField("📊 Current Score",
+                $"Team 1: **{challenge.Team1CurrentScore}** pts | Team 2: **{challenge.Team2CurrentScore}** pts",
+                inline: false);
+
+            embed.WithFooter($"Click a button after solving • Team 1 max: {challenge.Team1MaxPossibleScore} | Team 2 max: {challenge.Team2MaxPossibleScore}");
+
+            // Update buttons - disable solved problems
+            var components = new ComponentBuilder()
+                .WithButton("Easy", "teamEasy", ButtonStyle.Success, new Emoji("🟢"), disabled: challenge.Problem1SolvedByTeam != 0)
+                .WithButton("Medium 1", "teamMedium1", ButtonStyle.Primary, new Emoji("🟡"), disabled: challenge.Problem2SolvedByTeam != 0)
+                .WithButton("Medium 2", "teamMedium2", ButtonStyle.Primary, new Emoji("🟡"), disabled: challenge.Problem3SolvedByTeam != 0)
+                .WithButton("Hard", "teamHard", ButtonStyle.Danger, new Emoji("🔴"), disabled: challenge.Problem4SolvedByTeam != 0);
+
+            await component.ModifyOriginalResponseAsync(msg =>
+            {
+                msg.Embed = embed.Build();
+                msg.Components = components.Build();
+            });
         }
 
         public async Task HandleDifficultyButton(SocketMessageComponent component, SocketThreadChannel threadChannel, string difficulty)
@@ -117,7 +190,7 @@ namespace LeetBot.Services
             bool isVerified = await _userRepo.IsUserExistAsync(component);
             if (!isVerified)
             {
-                await component.FollowupAsync("You need to verify yourself first using the /identify command.");
+                await component.FollowupAsync("❌ You need to verify yourself first using the /identify command.", ephemeral: true);
                 return;
             }
 
@@ -126,7 +199,7 @@ namespace LeetBot.Services
             if (challenge == null)
             {
                 _logger.LogError("Challenge not found.");
-                await component.FollowupAsync("Challenge not found.", ephemeral: true);
+                await component.FollowupAsync("❌ Challenge not found.", ephemeral: true);
                 return;
             }
 
@@ -157,13 +230,13 @@ namespace LeetBot.Services
                     isAlreadySolved = challenge.Problem4SolvedByTeam != 0;
                     break;
                 default:
-                    await component.FollowupAsync("Invalid difficulty.", ephemeral: true);
+                    await component.FollowupAsync("❌ Invalid difficulty.", ephemeral: true);
                     return;
             }
 
             if (isAlreadySolved)
             {
-                await component.FollowupAsync("This problem is already solved...", ephemeral: true);
+                await component.FollowupAsync("⚠️ This problem has already been solved!", ephemeral: true);
                 return;
             }
 
@@ -192,11 +265,12 @@ namespace LeetBot.Services
 
             if (allSubmissions.Count == 0)
             {
-                await component.FollowupAsync("No submissions found for this problem, please click this button ONLY when you solve the problem", ephemeral: true);
+                await component.FollowupAsync("❌ No submissions found for this problem. Please click this button ONLY after you've solved the problem!", ephemeral: true);
                 return;
             }
 
-            var firstSolver = allSubmissions.FirstOrDefault()?.LeetCodeUsername;
+            var firstSolverSubmission = allSubmissions.FirstOrDefault();
+            var firstSolver = firstSolverSubmission?.LeetCodeUsername;
 
             int firstSolverTeam;
 
@@ -233,32 +307,52 @@ namespace LeetBot.Services
 
             string difficultyDisplay = difficulty.ToLower() switch
             {
-                "medium1" => "MEDIUM 1",
-                "medium2" => "MEDIUM 2",
-                _ => difficulty.ToUpper()
+                "medium1" => "Medium 1",
+                "medium2" => "Medium 2",
+                _ => char.ToUpper(difficulty[0]) + difficulty.Substring(1).ToLower()
             };
 
-            await component.FollowupAsync($"The {difficultyDisplay} problem was solved by Team {(firstSolverTeam == 1 ? "1️⃣" : "2️⃣")} (+{scoreToBeAdded} pts)");
+            string emoji = difficulty.ToLower() switch
+            {
+                "easy" => "🟢",
+                "medium1" => "🟡",
+                "medium2" => "🟡",
+                "hard" => "🔴",
+                _ => "⚪"
+            };
+
+            // Get the solver's mention
+            var solverUser = teams.First().Users.FirstOrDefault(u => u.LeetCodeUsername == firstSolver)
+                          ?? teams.Last().Users.FirstOrDefault(u => u.LeetCodeUsername == firstSolver);
+
+            string solverMention = solverUser?.Mention ?? firstSolver;
+
+            // Update the embed with new scores and disabled button
+            await UpdateChallengeEmbed(component, challenge);
+
+            // Notify everyone in the thread
+            await threadChannel.SendMessageAsync(
+                $"{emoji} **{difficultyDisplay}** solved by {solverMention} " +
+                $"(Team {(firstSolverTeam == 1 ? "1️⃣" : "2️⃣")}) " +
+                $"**+{scoreToBeAdded} pts!**\n" +
+                $"**Current Score:** Team 1: {challenge.Team1CurrentScore} | Team 2: {challenge.Team2CurrentScore}");
 
             // Check if challenge is finished
-            if (challenge.Team1CurrentScore > challenge.Team2MaxPossibleScore)
+            if (challenge.Team1CurrentScore > challenge.Team2MaxPossibleScore ||
+                challenge.Team2CurrentScore > challenge.Team1MaxPossibleScore)
             {
+                challenge.EndedAt = DateTime.UtcNow;
+                await _teamChallengeRepo.SaveChangesAsync();
+
                 var resultEmbed = await BuildTeamChallengeResultEmbedAsync(challenge.Id);
-                await threadChannel.SendMessageAsync(embed: resultEmbed);
+                await threadChannel.SendMessageAsync(
+                    $"🎊 **CHALLENGE COMPLETE!** 🎊\n" +
+                    $"Congratulations to the winners!",
+                    embed: resultEmbed);
+
                 await _teamChallengeRepo.DeleteTeamChallengeAsync(challenge.Id);
 
-                await component.ModifyOriginalResponseAsync(msg =>
-                {
-                    msg.Components = new ComponentBuilder().Build();
-                });
-                return;
-            }
-            else if (challenge.Team2CurrentScore > challenge.Team1MaxPossibleScore)
-            {
-                var resultEmbed = await BuildTeamChallengeResultEmbedAsync(challenge.Id);
-                await threadChannel.SendMessageAsync(embed: resultEmbed);
-                await _teamChallengeRepo.DeleteTeamChallengeAsync(challenge.Id);
-
+                // Remove all buttons
                 await component.ModifyOriginalResponseAsync(msg =>
                 {
                     msg.Components = new ComponentBuilder().Build();
@@ -274,14 +368,14 @@ namespace LeetBot.Services
             bool isVerified = await _userRepo.IsUserExistAsync(component);
             if (!isVerified)
             {
-                await component.FollowupAsync("You need to verify yourself first using the /identify command.");
+                await component.FollowupAsync("❌ You need to verify yourself first using the /identify command.", ephemeral: true);
                 return;
             }
 
             bool isFree = await _userRepo.IsUserFreeAsync(component);
             if (!isFree)
             {
-                await component.FollowupAsync("You are already in a challenge.", ephemeral: true);
+                await component.FollowupAsync("⚠️ You are already in a challenge.", ephemeral: true);
                 return;
             }
 
@@ -298,11 +392,11 @@ namespace LeetBot.Services
                 if (firstTeam.Users.Count < 2)
                 {
                     await _teamRepo.AddUserToTeamAsync(firstTeam.Id, user);
-                    await component.FollowupAsync($"{component.User.Mention} has joined Team 1 ✅");
+                    await component.FollowupAsync($"✅ {component.User.Mention} joined **Team 1**!");
                 }
                 else
                 {
-                    await component.FollowupAsync("Team 1 is full", ephemeral: true);
+                    await component.FollowupAsync("⚠️ Team 1 is full (2/2 players)", ephemeral: true);
                     return;
                 }
             }
@@ -313,11 +407,11 @@ namespace LeetBot.Services
                 if (secondTeam.Users.Count < 2)
                 {
                     await _teamRepo.AddUserToTeamAsync(secondTeam.Id, user);
-                    await component.FollowupAsync($"{component.User.Mention} has joined Team 2 ✅");
+                    await component.FollowupAsync($"✅ {component.User.Mention} joined **Team 2**!");
                 }
                 else
                 {
-                    await component.FollowupAsync("Team 2 is full", ephemeral: true);
+                    await component.FollowupAsync("⚠️ Team 2 is full (2/2 players)", ephemeral: true);
                     return;
                 }
             }
