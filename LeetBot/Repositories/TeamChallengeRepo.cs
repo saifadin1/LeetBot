@@ -108,6 +108,8 @@ namespace LeetBot.Repositories
         {
             return await _dbContext.TeamChallenges
                 .Where(tc => tc.IsActive && tc.EndedAt <= DateTime.UtcNow)
+                .Include(x => x.Teams)
+                .ThenInclude(t => t.Users)
                 .ToListAsync();
         }
     }

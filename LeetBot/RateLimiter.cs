@@ -24,7 +24,7 @@ namespace LeetBot
             var now = DateTime.UtcNow;
             if (_requests.TryGetValue(key, out var lastRequest))
             {
-                if ((now - lastRequest).TotalSeconds < 30)
+                if ((now - lastRequest).TotalSeconds < 7)
                 {
                     return (now - lastRequest);
                 }

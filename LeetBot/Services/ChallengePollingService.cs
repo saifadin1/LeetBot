@@ -104,7 +104,7 @@ namespace LeetBot.Services
 
                         foreach (var teamChallenge in expiredTeamChallenges)
                         {
-                            var teamsToDisband = await teamRepo.GetTeamsByChallengeIdAsync(teamChallenge.Id);
+                            var teamsToDisband = teamChallenge.Teams;
 
                             foreach (var team in teamsToDisband)
                             {
