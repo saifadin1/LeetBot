@@ -6,6 +6,7 @@ using LeetBot.Helpers;
 using LeetBot.Interfaces;
 using LeetBot.Models;
 using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 using Color = Discord.Color;
 
 namespace LeetBot.Services
@@ -17,6 +18,7 @@ namespace LeetBot.Services
         private readonly ITeamRepo _teamRepo;
         private readonly ILogger<JoinTeam1BtnHandler> _logger;
         private readonly ILeetCodeService _leet;
+        private static readonly ConcurrentDictionary<ulong, SemaphoreSlim> _challengeLocks = new();
 
         public TeamService(ITeamChallengeRepo teamChallengeRepo,
             IUserRepo userRepo,
@@ -194,170 +196,182 @@ namespace LeetBot.Services
                 return;
             }
 
-            var challenge = await _teamChallengeRepo.GetTeamChallengeByIdAsync(component.Message.Id);
 
-            if (challenge == null)
+            var semaphore = _challengeLocks.GetOrAdd(component.Message.Id, _ => new SemaphoreSlim(1, 1));
+            await semaphore.WaitAsync();
+
+
+            try
             {
-                _logger.LogError("Challenge not found.");
-                await component.FollowupAsync("❌ Challenge not found.", ephemeral: true);
-                return;
-            }
+                var challenge = await _teamChallengeRepo.GetTeamChallengeByIdAsync(component.Message.Id);
 
-            string problemSlug;
-            int scoreToBeAdded;
-            bool isAlreadySolved;
-
-            switch (difficulty.ToLower())
-            {
-                case "easy":
-                    problemSlug = challenge.EasyProblemTitleSlug;
-                    scoreToBeAdded = 100;
-                    isAlreadySolved = challenge.Problem1SolvedByTeam != 0;
-                    break;
-                case "medium1":
-                    problemSlug = challenge.MediumProblem1TitleSlug;
-                    scoreToBeAdded = 200;
-                    isAlreadySolved = challenge.Problem2SolvedByTeam != 0;
-                    break;
-                case "medium2":
-                    problemSlug = challenge.MediumProblem2TitleSlug;
-                    scoreToBeAdded = 200;
-                    isAlreadySolved = challenge.Problem3SolvedByTeam != 0;
-                    break;
-                case "hard":
-                    problemSlug = challenge.HardProblemTitleSlug;
-                    scoreToBeAdded = 400;
-                    isAlreadySolved = challenge.Problem4SolvedByTeam != 0;
-                    break;
-                default:
-                    await component.FollowupAsync("❌ Invalid difficulty.", ephemeral: true);
+                if (challenge == null)
+                {
+                    _logger.LogError("Challenge not found.");
+                    await component.FollowupAsync("❌ Challenge not found.", ephemeral: true);
                     return;
-            }
-
-            if (isAlreadySolved)
-            {
-                await component.FollowupAsync("⚠️ This problem has already been solved!", ephemeral: true);
-                return;
-            }
-
-            var teams = challenge.Teams;
-            var allSubmissions = new List<UserLastSubmissionDTO>();
-
-            foreach (var user in teams.First().Users)
-            {
-                var lastSubmission = await _leet.GetUserSubmissionsAsync(user.LeetCodeUsername);
-                if (lastSubmission != null && lastSubmission.TitleSlug == problemSlug)
-                {
-                    allSubmissions.Add(lastSubmission);
                 }
-            }
 
-            foreach (var user in teams.Last().Users)
-            {
-                var lastSubmission = await _leet.GetUserSubmissionsAsync(user.LeetCodeUsername);
-                if (lastSubmission != null && lastSubmission.TitleSlug == problemSlug)
-                {
-                    allSubmissions.Add(lastSubmission);
-                }
-            }
-
-            allSubmissions.Sort();
-
-            if (allSubmissions.Count == 0)
-            {
-                await component.FollowupAsync("❌ No submissions found for this problem. Please click this button ONLY after you've solved the problem!", ephemeral: true);
-                return;
-            }
-
-            var firstSolverSubmission = allSubmissions.FirstOrDefault();
-            var firstSolver = firstSolverSubmission?.LeetCodeUsername;
-
-            int firstSolverTeam;
-
-            if (teams.First().Users.Any(x => x.LeetCodeUsername == firstSolver))
-            {
-                firstSolverTeam = 1;
-                challenge.Team1CurrentScore += scoreToBeAdded;
-                challenge.Team2MaxPossibleScore -= scoreToBeAdded;
+                string problemSlug;
+                int scoreToBeAdded;
+                bool isAlreadySolved;
 
                 switch (difficulty.ToLower())
                 {
-                    case "easy": challenge.Problem1SolvedByTeam = 1; break;
-                    case "medium1": challenge.Problem2SolvedByTeam = 1; break;
-                    case "medium2": challenge.Problem3SolvedByTeam = 1; break;
-                    case "hard": challenge.Problem4SolvedByTeam = 1; break;
+                    case "easy":
+                        problemSlug = challenge.EasyProblemTitleSlug;
+                        scoreToBeAdded = 100;
+                        isAlreadySolved = challenge.Problem1SolvedByTeam != 0;
+                        break;
+                    case "medium1":
+                        problemSlug = challenge.MediumProblem1TitleSlug;
+                        scoreToBeAdded = 200;
+                        isAlreadySolved = challenge.Problem2SolvedByTeam != 0;
+                        break;
+                    case "medium2":
+                        problemSlug = challenge.MediumProblem2TitleSlug;
+                        scoreToBeAdded = 200;
+                        isAlreadySolved = challenge.Problem3SolvedByTeam != 0;
+                        break;
+                    case "hard":
+                        problemSlug = challenge.HardProblemTitleSlug;
+                        scoreToBeAdded = 400;
+                        isAlreadySolved = challenge.Problem4SolvedByTeam != 0;
+                        break;
+                    default:
+                        await component.FollowupAsync("❌ Invalid difficulty.", ephemeral: true);
+                        return;
                 }
-            }
-            else
-            {
-                firstSolverTeam = 2;
-                challenge.Team2CurrentScore += scoreToBeAdded;
-                challenge.Team1MaxPossibleScore -= scoreToBeAdded;
 
-                switch (difficulty.ToLower())
+                if (isAlreadySolved)
                 {
-                    case "easy": challenge.Problem1SolvedByTeam = 2; break;
-                    case "medium1": challenge.Problem2SolvedByTeam = 2; break;
-                    case "medium2": challenge.Problem3SolvedByTeam = 2; break;
-                    case "hard": challenge.Problem4SolvedByTeam = 2; break;
+                    await component.FollowupAsync("⚠️ This problem has already been solved!", ephemeral: true);
+                    return;
                 }
-            }
 
-            await _teamChallengeRepo.SaveChangesAsync();
+                var teams = challenge.Teams;
+                var allSubmissions = new List<UserLastSubmissionDTO>();
 
-            string difficultyDisplay = difficulty.ToLower() switch
-            {
-                "medium1" => "Medium 1",
-                "medium2" => "Medium 2",
-                _ => char.ToUpper(difficulty[0]) + difficulty.Substring(1).ToLower()
-            };
+                foreach (var user in teams.First().Users)
+                {
+                    var lastSubmission = await _leet.GetUserSubmissionsAsync(user.LeetCodeUsername);
+                    if (lastSubmission != null && lastSubmission.TitleSlug == problemSlug)
+                    {
+                        allSubmissions.Add(lastSubmission);
+                    }
+                }
 
-            string emoji = difficulty.ToLower() switch
-            {
-                "easy" => "🟢",
-                "medium1" => "🟡",
-                "medium2" => "🟡",
-                "hard" => "🔴",
-                _ => "⚪"
-            };
+                foreach (var user in teams.Last().Users)
+                {
+                    var lastSubmission = await _leet.GetUserSubmissionsAsync(user.LeetCodeUsername);
+                    if (lastSubmission != null && lastSubmission.TitleSlug == problemSlug)
+                    {
+                        allSubmissions.Add(lastSubmission);
+                    }
+                }
 
-            // Get the solver's mention
-            var solverUser = teams.First().Users.FirstOrDefault(u => u.LeetCodeUsername == firstSolver)
-                          ?? teams.Last().Users.FirstOrDefault(u => u.LeetCodeUsername == firstSolver);
+                allSubmissions.Sort();
 
-            string solverMention = solverUser?.Mention ?? firstSolver;
+                if (allSubmissions.Count == 0)
+                {
+                    await component.FollowupAsync("❌ No submissions found for this problem. Please click this button ONLY after you've solved the problem!", ephemeral: true);
+                    return;
+                }
 
-            // Update the embed with new scores and disabled button
-            await UpdateChallengeEmbed(component, challenge);
+                var firstSolverSubmission = allSubmissions.FirstOrDefault();
+                var firstSolver = firstSolverSubmission?.LeetCodeUsername;
 
-            // Notify everyone in the thread
-            await threadChannel.SendMessageAsync(
-                $"{emoji} **{difficultyDisplay}** solved by {solverMention} " +
-                $"(Team {(firstSolverTeam == 1 ? "1️⃣" : "2️⃣")}) " +
-                $"**+{scoreToBeAdded} pts!**\n" +
-                $"**Current Score:** Team 1: {challenge.Team1CurrentScore} | Team 2: {challenge.Team2CurrentScore}");
+                int firstSolverTeam;
 
-            // Check if challenge is finished
-            if (challenge.Team1CurrentScore > challenge.Team2MaxPossibleScore ||
-                challenge.Team2CurrentScore > challenge.Team1MaxPossibleScore)
-            {
-                challenge.EndedAt = DateTime.UtcNow;
+                if (teams.First().Users.Any(x => x.LeetCodeUsername == firstSolver))
+                {
+                    firstSolverTeam = 1;
+                    challenge.Team1CurrentScore += scoreToBeAdded;
+                    challenge.Team2MaxPossibleScore -= scoreToBeAdded;
+
+                    switch (difficulty.ToLower())
+                    {
+                        case "easy": challenge.Problem1SolvedByTeam = 1; break;
+                        case "medium1": challenge.Problem2SolvedByTeam = 1; break;
+                        case "medium2": challenge.Problem3SolvedByTeam = 1; break;
+                        case "hard": challenge.Problem4SolvedByTeam = 1; break;
+                    }
+                }
+                else
+                {
+                    firstSolverTeam = 2;
+                    challenge.Team2CurrentScore += scoreToBeAdded;
+                    challenge.Team1MaxPossibleScore -= scoreToBeAdded;
+
+                    switch (difficulty.ToLower())
+                    {
+                        case "easy": challenge.Problem1SolvedByTeam = 2; break;
+                        case "medium1": challenge.Problem2SolvedByTeam = 2; break;
+                        case "medium2": challenge.Problem3SolvedByTeam = 2; break;
+                        case "hard": challenge.Problem4SolvedByTeam = 2; break;
+                    }
+                }
+
                 await _teamChallengeRepo.SaveChangesAsync();
 
-                var resultEmbed = await BuildTeamChallengeResultEmbedAsync(challenge.Id);
-                await threadChannel.SendMessageAsync(
-                    $"🎊 **CHALLENGE COMPLETE!** 🎊\n" +
-                    $"Congratulations to the winners!",
-                    embed: resultEmbed);
-
-                await _teamChallengeRepo.DeleteTeamChallengeAsync(challenge.Id);
-
-                // Remove all buttons
-                await component.ModifyOriginalResponseAsync(msg =>
+                string difficultyDisplay = difficulty.ToLower() switch
                 {
-                    msg.Components = new ComponentBuilder().Build();
-                });
-                return;
+                    "medium1" => "Medium 1",
+                    "medium2" => "Medium 2",
+                    _ => char.ToUpper(difficulty[0]) + difficulty.Substring(1).ToLower()
+                };
+
+                string emoji = difficulty.ToLower() switch
+                {
+                    "easy" => "🟢",
+                    "medium1" => "🟡",
+                    "medium2" => "🟡",
+                    "hard" => "🔴",
+                    _ => "⚪"
+                };
+
+                // Get the solver's mention
+                var solverUser = teams.First().Users.FirstOrDefault(u => u.LeetCodeUsername == firstSolver)
+                              ?? teams.Last().Users.FirstOrDefault(u => u.LeetCodeUsername == firstSolver);
+
+                string solverMention = solverUser?.Mention ?? firstSolver;
+
+                // Update the embed with new scores and disabled button
+                await UpdateChallengeEmbed(component, challenge);
+
+                // Notify everyone in the thread
+                await threadChannel.SendMessageAsync(
+                    $"{emoji} **{difficultyDisplay}** solved by {solverMention} " +
+                    $"(Team {(firstSolverTeam == 1 ? "1️⃣" : "2️⃣")}) " +
+                    $"**+{scoreToBeAdded} pts!**\n" +
+                    $"**Current Score:** Team 1: {challenge.Team1CurrentScore} | Team 2: {challenge.Team2CurrentScore}");
+
+                // Check if challenge is finished
+                if (challenge.Team1CurrentScore > challenge.Team2MaxPossibleScore ||
+                    challenge.Team2CurrentScore > challenge.Team1MaxPossibleScore)
+                {
+                    challenge.EndedAt = DateTime.UtcNow;
+                    await _teamChallengeRepo.SaveChangesAsync();
+
+                    var resultEmbed = await BuildTeamChallengeResultEmbedAsync(challenge.Id);
+                    await threadChannel.SendMessageAsync(
+                        $"🎊 **CHALLENGE COMPLETE!** 🎊\n" +
+                        $"Congratulations to the winners!",
+                        embed: resultEmbed);
+
+                    await _teamChallengeRepo.DeleteTeamChallengeAsync(challenge.Id);
+
+                    // Remove all buttons
+                    await component.ModifyOriginalResponseAsync(msg =>
+                    {
+                        msg.Components = new ComponentBuilder().Build();
+                    });
+                    return;
+                }
+            }
+            finally
+            {
+                semaphore.Release();
             }
         }
 
