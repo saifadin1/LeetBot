@@ -51,8 +51,11 @@ namespace LeetBot.Repositories
             if (team == null)
                 throw new Exception("Team not found.");
 
+            var existingUser = await _dbContext.Users.FindAsync(user.Id);
+            if (existingUser == null)
+                throw new Exception("User not found.");
+
             team.Users.Add(user);
-            user.TeamId = teamId;
 
             await _dbContext.SaveChangesAsync();
         }
@@ -67,9 +70,6 @@ namespace LeetBot.Repositories
                 throw new Exception("Team not found.");
 
             team.Users.Remove(user);
-            user.TeamId = null;
-
-
 
             await _dbContext.SaveChangesAsync();
         }

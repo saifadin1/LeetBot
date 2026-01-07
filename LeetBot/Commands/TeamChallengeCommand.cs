@@ -36,6 +36,9 @@ namespace LeetBot.Commands
 
         public async Task ExecuteAsync(SocketSlashCommand command, ISocketMessageChannel channel)
         {
+            await command.DeferAsync();
+            
+            
             var userId = command.User.Id;
 
             var existingUser = await _userRepo.IsUserExistAsync(command);
@@ -66,7 +69,6 @@ namespace LeetBot.Commands
 
             try
             {
-                await command.DeferAsync();
 
                 var myChannel = (SocketTextChannel)channel;
                 var thread = await myChannel.CreateThreadAsync(
