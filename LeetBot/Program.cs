@@ -68,6 +68,7 @@ namespace LeetBot
                     services.AddSingleton<IBot, Bot>();
 
                     services.AddScoped<IdentifyCommand>();
+                    services.AddScoped<IdentifyCodeforcesCommand>();
                     services.AddScoped<ChallengeCommand>();
                     services.AddScoped<TeamChallengeCommand>();
                     services.AddScoped<PingCommand>();
@@ -90,6 +91,7 @@ namespace LeetBot
 
 
                     services.AddScoped<ILeetCodeService, LeetCodeService>();
+                    services.AddScoped<ICodeforcesService, CodeforcesService>();
                     services.AddScoped<ITeamService, TeamService>();
 
                     services.AddScoped<IChallengeRepo, ChallengeRepo>();
