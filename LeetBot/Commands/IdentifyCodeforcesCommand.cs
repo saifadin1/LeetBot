@@ -89,7 +89,6 @@ namespace LeetBot.Commands
                 try
                 {
                     var userInfo = await _codeforcesService.GetUserInfoAsync(codeforcesHandle);
-                    Console.WriteLine(userInfo.FirstName);
 
                     if (userInfo.FirstName?.Trim() == randomId)
                     {
