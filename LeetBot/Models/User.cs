@@ -31,7 +31,15 @@ namespace LeetBot.Models
         public long? TeamId { get; set; }
         public Team? Team { get; set; }
 
-        
+
         public bool IsFree { get; set; } = true;
+
+
+
+        //CF
+        public string? CodeforcesHandle { get; set; }
+        public int? CodeforcesRating { get; set; }
+        public string? CodeforcesRank { get; set; }
+        public DateTime? CodeforcesVerifiedAt { get; set; }
     }
 }
