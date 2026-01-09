@@ -1,6 +1,5 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using LeetBot.Data;
 using LeetBot.Helpers;
 using LeetBot.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -16,33 +15,30 @@ namespace LeetBot.Commands
 
         public bool isApiCommand { get; set; } = true;
 
-        public IdentifyCodeforcesCommand(ICodeforcesService codeforcesService, IUserRepo userRepo, ILogger<IdentifyCodeforcesCommand> logger)
+        public IdentifyCodeforcesCommand(ICodeforcesService codeforcesService, IUserRepo userRepo,
+            ILogger<IdentifyCodeforcesCommand> logger)
         {
             _codeforcesService = codeforcesService;
             _userRepo = userRepo;
             _logger = logger;
         }
 
-        public string GenerateRandomId(int length)
+        private string GenerateRandomCode(int length = 6)
         {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
             var random = new Random();
-            var randomId = new char[length];
-            for (int i = 0; i < length; i++)
-            {
-                randomId[i] = chars[random.Next(chars.Length)];
-            }
-            return new string(randomId);
+            return new string(Enumerable.Range(0, length)
+                .Select(_ => chars[random.Next(chars.Length)])
+                .ToArray());
         }
 
         public SlashCommandBuilder BuildCommand()
         {
-            var command = new SlashCommandBuilder()
+            return new SlashCommandBuilder()
                 .WithName("identify-cf")
-                .WithDescription("Verify your Codeforces account")
-                .AddOption("handle", ApplicationCommandOptionType.String, "Your Codeforces handle", isRequired: true);
-
-            return command;
+                .WithDescription("Verify your Codeforces account and get ranked role")
+                .AddOption("handle", ApplicationCommandOptionType.String,
+                    "Your Codeforces handle", isRequired: true);
         }
 
         public async Task ExecuteAsync(SocketSlashCommand command, ISocketMessageChannel channel)
@@ -50,37 +46,63 @@ namespace LeetBot.Commands
             await command.DeferAsync();
 
             var codeforcesHandle = command.Data.Options
-                .FirstOrDefault(x => x.Name == "handle")?.Value?.ToString();
+                .FirstOrDefault(x => x.Name == "handle")?.Value?.ToString()?.Trim();
 
             if (string.IsNullOrWhiteSpace(codeforcesHandle))
             {
-                await command.FollowupAsync("Invalid or missing Codeforces handle.");
+                await command.FollowupAsync("❌ Invalid or missing Codeforces handle.");
                 return;
             }
 
-            var randomId = GenerateRandomId(4);
+            CodeforcesUserInfo userInfo;
+            try
+            {
+                userInfo = await _codeforcesService.GetUserInfoAsync(codeforcesHandle);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching Codeforces data for handle: {Handle}", codeforcesHandle);
+
+                var errorEmbed = new EmbedBuilder()
+                    .WithTitle("Handle Identify")
+                    .WithDescription($"Sorry {command.User.Mention}, can you try again?")
+                    .AddField("Handle", codeforcesHandle, inline: true)
+                    .AddField("Status", "❌ Invalid Handle / API Error", inline: true)
+                    .WithColor(Color.Red)
+                    .WithThumbnailUrl(command.User.GetAvatarUrl() ?? command.User.GetDefaultAvatarUrl())
+                    .WithCurrentTimestamp()
+                    .Build();
+
+                await command.FollowupAsync(embed: errorEmbed);
+                return;
+            }
+
             var isExistingUser = await _userRepo.IsUserExistAsync(command);
+            var user = isExistingUser ? await _userRepo.GetUserByIdAsync(TextProcessor.UserId(command.User.Id, command.GuildId)) : null;
 
-            if (isExistingUser)
-            {
-                var user = await _userRepo.GetUserByIdAsync(TextProcessor.UserId(command.User.Id, command.GuildId));
-                if (!string.IsNullOrEmpty(user.CodeforcesHandle))
-                {
-                    await command.FollowupAsync("You already have a verified Codeforces account.\n" +
-                        $"If you want to change it to the new handle, please place this code: `{randomId}` in your Codeforces **First Name** field.");
-                }
-                else
-                {
-                    await command.FollowupAsync($"Please set your Codeforces **First Name** to this code: `{randomId}` within 1 minute.");
-                }
-            }
-            else
-            {
-                await command.FollowupAsync($"Please set your Codeforces **First Name** to this code: `{randomId}` within 1 minute.\n" +
-                    "Go to: https://codeforces.com/settings/social");
-            }
+            var verificationCode = GenerateRandomCode(); // Used only for display in instructions
+            var problemId = GetRandomProblem();          // e.g. "1677A"
+            var (targetContestId, targetIndex) = ParseProblemId(problemId);
 
-            var timeout = TimeSpan.FromMinutes(6);
+            var instructionEmbed = new EmbedBuilder()
+                .WithTitle("Handle Identify")
+                .WithDescription(
+                    $"To verify your Codeforces handle, submit a **compilation error** to the following problem:\n\n" +
+                    $"**Problem:** [{problemId}](https://codeforces.com/problemset/problem/{problemId})\n" +
+                    $"**Instructions:**\n" +
+                    $"1. Click the link above.\n" +
+                    $"2. Submit ANY code that causes a compilation error (e.g., just `hello world`).\n" +
+                    $"3. The bot will check your **last submission** automatically.\n\n" +
+                    $"*We check for: Problem {problemId} + Verdict: Compilation Error*")
+                .WithColor(Color.Blue)
+                .WithThumbnailUrl(userInfo.Avatar ?? command.User.GetDefaultAvatarUrl())
+                .WithFooter("Verification expires in 2 minutes")
+                .WithCurrentTimestamp()
+                .Build();
+
+            await command.FollowupAsync(embed: instructionEmbed);
+
+            var timeout = TimeSpan.FromMinutes(2);
             var delay = TimeSpan.FromSeconds(5);
             var stopwatch = Stopwatch.StartNew();
 
@@ -88,48 +110,82 @@ namespace LeetBot.Commands
             {
                 try
                 {
-                    var userInfo = await _codeforcesService.GetUserInfoAsync(codeforcesHandle);
+                    var submissions = await _codeforcesService.GetRecentSubmissionsAsync(codeforcesHandle, 1);
+                    var lastSubmission = submissions.FirstOrDefault();
 
-                    if (userInfo.FirstName?.Trim() == randomId)
+                    if (lastSubmission != null)
                     {
-                        // Verification successful
-                        var user = isExistingUser
-                            ? await _userRepo.GetUserByIdAsync(TextProcessor.UserId(command.User.Id, command.GuildId))
-                            : await _userRepo.CreateUserAsync(command);
+                        if (lastSubmission.Verdict == "COMPILATION_ERROR" &&
+                            lastSubmission.ContestId  == targetContestId.ToString() &&
+                            lastSubmission.ProblemIndex.ToString() == targetIndex)
+                        {
 
-                        user.CodeforcesHandle = codeforcesHandle;
-                        user.CodeforcesRating = userInfo.Rating;
-                        user.CodeforcesRank = userInfo.Rank;
-                        user.CodeforcesVerifiedAt = DateTime.UtcNow;
+                            if (!isExistingUser)
+                            {
+                                user = await _userRepo.CreateUserAsync(command);
+                            }
 
-                        await _userRepo.SaveChangesAsync();
+                            await _userRepo.UpdateUserCodeforcesAsync(command,
+                                codeforcesHandle, userInfo.Rating, userInfo.Rank);
 
-                        // Assign role based on rating
-                        await AssignCodeforcesRoleAsync(command, userInfo.Rating, userInfo.Rank);
+                            await AssignCodeforcesRoleAsync(command, userInfo.Rank);
 
-                        await command.FollowupAsync(
-                            $"✅ **Codeforces account verified!**\n" +
-                            $"Handle: `{codeforcesHandle}`\n" +
-                            $"Rating: **{userInfo.Rating}** ({userInfo.Rank})\n" +
-                            $"Role assigned based on your rank!");
+                            var cfAvatar = !string.IsNullOrEmpty(userInfo.Avatar)
+                                ? userInfo.Avatar
+                                : command.User.GetAvatarUrl() ?? command.User.GetDefaultAvatarUrl();
 
-                        return;
+                            var successEmbed = new EmbedBuilder()
+                                .WithTitle("Handle Identify")
+                                .WithDescription($"{command.User.Mention}, your Codeforces account has been verified!")
+                                .AddField("Handle", codeforcesHandle, inline: true)
+                                .AddField("Rank", $"{GetRankEmoji(userInfo.Rank)} {userInfo.Rank}", inline: true)
+                                .AddField("Status", "✅ Verified", inline: true)
+                                .AddField("Rating", $"**{userInfo.Rating}**", inline: true)
+                                .AddField("Max Rating", $"**{userInfo.MaxRating}** ({userInfo.MaxRank})", inline: true)
+                                .AddField("Role", GetRoleNameFromRank(userInfo.Rank), inline: true)
+                                .WithColor(GetColorForRank(userInfo.Rank))
+                                .WithThumbnailUrl(cfAvatar)
+                                .WithCurrentTimestamp()
+                                .Build();
+
+                            await command.FollowupAsync(embed: successEmbed);
+                            return; 
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error fetching Codeforces data for handle: {Handle}", codeforcesHandle);
-                    await command.FollowupAsync($"❌ Invalid Codeforces handle or API error.");
-                    return;
+                    _logger.LogError(ex, "Error checking submissions for handle: {Handle}", codeforcesHandle);
                 }
 
                 await Task.Delay(delay);
             }
 
-            await command.FollowupAsync($"⏱️ Verification timed out: `{codeforcesHandle}` did not set their first name in time.");
+            var timeoutEmbed = new EmbedBuilder()
+                .WithTitle("Handle Identify")
+                .WithDescription($"Sorry {command.User.Mention}, verification timed out.")
+                .AddField("Handle", codeforcesHandle, inline: true)
+                .AddField("Reason", $"No COMPILATION_ERROR found on problem {problemId} as the last submission.", inline: false)
+                .WithColor(Color.Orange)
+                .WithThumbnailUrl(command.User.GetAvatarUrl() ?? command.User.GetDefaultAvatarUrl())
+                .WithFooter("Please try running the command again.")
+                .WithCurrentTimestamp()
+                .Build();
+
+            await command.FollowupAsync(embed: timeoutEmbed);
         }
 
-        private async Task AssignCodeforcesRoleAsync(SocketSlashCommand command, int rating, string rank)
+
+        (int id, string index) ParseProblemId(string problemId)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(problemId, @"^(\d+)([A-Z]\d*)$");
+            return match.Success
+                ? (int.Parse(match.Groups[1].Value), match.Groups[2].Value)
+                : (0, string.Empty);
+        }
+
+
+        private async Task AssignCodeforcesRoleAsync(SocketSlashCommand command, string rank)
         {
             try
             {
@@ -139,29 +195,37 @@ namespace LeetBot.Commands
                 var user = command.User as SocketGuildUser;
                 if (user == null) return;
 
-                // Remove all existing Codeforces rank roles
-                var cfRoles = new[] { "Newbie", "Pupil", "Specialist", "Expert", "Candidate Master",
-                                      "Master", "International Master", "Grandmaster",
-                                      "International Grandmaster", "Legendary Grandmaster" };
+                var cfRoles = new[]
+                {
+                    "Newbie", "Pupil", "Specialist", "Expert",
+                    "Candidate Master", "Master", "International Master",
+                    "Grandmaster", "International Grandmaster", "Legendary Grandmaster",
+                    "Unrated"
+                };
 
                 foreach (var roleName in cfRoles)
                 {
-                    var existingRole = guild.Roles.FirstOrDefault(r => r.Name == roleName);
+                    var existingRole = guild.Roles.FirstOrDefault(r =>
+                        r.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase));
+
                     if (existingRole != null && user.Roles.Contains(existingRole))
                     {
                         await user.RemoveRoleAsync(existingRole);
+                        await Task.Delay(100);
                     }
                 }
 
-                // Assign new role based on rank
                 var targetRoleName = GetRoleNameFromRank(rank);
-                IRole targetRole = guild.Roles.FirstOrDefault(r => r.Name == targetRoleName);
+                IRole targetRole = guild.Roles.FirstOrDefault(r =>
+                    r.Name.Equals(targetRoleName, StringComparison.OrdinalIgnoreCase));
 
                 if (targetRole == null)
                 {
-                    // Create role with appropriate color if it doesn't exist
                     var color = GetColorForRank(rank);
-                    targetRole = await guild.CreateRoleAsync(targetRoleName, color: color, isMentionable: false);
+                    targetRole = await guild.CreateRoleAsync(targetRoleName,
+                        color: color,
+                        isMentionable: false,
+                        isHoisted: false);
                 }
 
                 await user.AddRoleAsync(targetRole);
@@ -172,9 +236,27 @@ namespace LeetBot.Commands
             }
         }
 
+        private string GetRankEmoji(string rank)
+        {
+            return rank?.ToLower() switch
+            {
+                "newbie" => "⚪",
+                "pupil" => "🟢",
+                "specialist" => "🔵",
+                "expert" => "💙",
+                "candidate master" => "💜",
+                "master" => "🟠",
+                "international master" => "🟠",
+                "grandmaster" => "🔴",
+                "international grandmaster" => "🔴",
+                "legendary grandmaster" => "⭐",
+                _ => "⚫"
+            };
+        }
+
         private string GetRoleNameFromRank(string rank)
         {
-            return rank switch
+            return rank?.ToLower() switch
             {
                 "newbie" => "Newbie",
                 "pupil" => "Pupil",
@@ -192,20 +274,32 @@ namespace LeetBot.Commands
 
         private Color GetColorForRank(string rank)
         {
-            return rank switch
+            return rank?.ToLower() switch
             {
-                "newbie" => new Color(128, 128, 128),           // Gray
-                "pupil" => new Color(0, 128, 0),                // Green
-                "specialist" => new Color(3, 168, 158),         // Cyan
-                "expert" => new Color(0, 0, 255),               // Blue
-                "candidate master" => new Color(170, 0, 170),   // Violet
-                "master" => new Color(255, 140, 0),             // Orange
-                "international master" => new Color(255, 140, 0), // Orange
-                "grandmaster" => new Color(255, 0, 0),          // Red
-                "international grandmaster" => new Color(255, 0, 0), // Red
-                "legendary grandmaster" => new Color(170, 0, 0), // Dark Red
-                _ => new Color(128, 128, 128)                   // Default Gray
+                "newbie" => new Color(128, 128, 128),
+                "pupil" => new Color(0, 128, 0),
+                "specialist" => new Color(3, 168, 158),
+                "expert" => new Color(0, 0, 255),
+                "candidate master" => new Color(170, 0, 170),
+                "master" => new Color(255, 140, 0),
+                "international master" => new Color(255, 140, 0),
+                "grandmaster" => new Color(255, 0, 0),
+                "international grandmaster" => new Color(255, 0, 0),
+                "legendary grandmaster" => new Color(170, 0, 0),
+                _ => new Color(128, 128, 128)
             };
+        }
+
+        private readonly string[] _verificationProblems = new[]
+        {
+            "4/A", "71/A", "158/A", "50/A", "231/A",
+            "282/A", "112/A", "263/A", "96/A", "118/A"
+        };
+
+        private string GetRandomProblem()
+        {
+            var random = new Random();
+            return _verificationProblems[random.Next(_verificationProblems.Length)];
         }
     }
 }

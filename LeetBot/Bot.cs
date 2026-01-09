@@ -112,67 +112,69 @@ namespace LeetBot
 
         private async Task SlashCommandHandler(SocketSlashCommand command)
         {
-            try
+            if (command.GuildId == null)
             {
-                // make sure the command is in a guild
-                if (command.GuildId == null)
-                {
-                    await command.RespondAsync("This command can only be used in a server.", ephemeral: true);
-                    return;
-                }
+                await command.RespondAsync("This command can only be used in a server.", ephemeral: true);
+                return;
+            }
 
-                if (_commandHandlers.TryGetValue(command.Data.Name, out var handler))
+            if (_commandHandlers.TryGetValue(command.Data.Name, out var handler))
+            {
+                _ = Task.Run(async () =>
                 {
-                    if (handler.isApiCommand)
+                    try
                     {
-                        var timeToWait = RateLimiter.isRateLimited(command);
-                        if (timeToWait.TotalSeconds > 0)
+                        if (handler.isApiCommand)
                         {
-                            var embed = new EmbedBuilder()
-                                .WithTitle("Rate Limit")
-                                .WithDescription($"You are being rate limited. Please wait {TimeSpan.FromSeconds(30).TotalSeconds - timeToWait.Seconds} seconds.")
-                                .WithColor(Color.Red);
+                            var timeToWait = RateLimiter.isRateLimited(command);
+                            if (timeToWait.TotalSeconds > 0)
+                            {
+                                var embed = new EmbedBuilder()
+                                    .WithTitle("Rate Limit")
+                                    .WithDescription($"You are being rate limited. Please wait {TimeSpan.FromSeconds(30).TotalSeconds - timeToWait.Seconds} seconds.")
+                                    .WithColor(Color.Red);
 
-                            await command.RespondAsync(embed: embed.Build(), ephemeral:true);
-                            return;
+                                await command.RespondAsync(embed: embed.Build(), ephemeral: true);
+                                return;
+                            }
+                        }
+
+                        await handler.ExecuteAsync(command, command.Channel);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error executing command: {CommandName}", command.Data.Name);
+
+                        try
+                        {
+                            await command.FollowupAsync("An error occurred while processing your command.", ephemeral: true);
+                        }
+                        catch
+                        {
                         }
                     }
-                    await handler.ExecuteAsync(command, command.Channel);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error executing command: {CommandName}", command.Data.Name);
-                await command.FollowupAsync("An error occurred while processing your command.", ephemeral:true);
+                });
             }
         }
         private async Task ComponentHandler(SocketMessageComponent component)
         {
-            try
+            _ = Task.Run(async () =>
             {
-                //if (component.Channel is null)
-                //{
-                //    _logger.LogError("Channel is null");
-                //    return;
-                //}
-                //var channelId = component.Channel.Id;
-
-                //var channel = await _client.GetChannelAsync(channelId) as SocketTextChannel;
-
-
-
-                var thread = component.Channel as SocketThreadChannel;
-
-                if (_componentHandlers.TryGetValue(component.Data.CustomId, out var handler))
+                try
                 {
-                    await handler.ExecuteAsync(component, thread);
+                    var thread = component.Channel as SocketThreadChannel;
+
+                    if (_componentHandlers.TryGetValue(component.Data.CustomId, out var handler))
+                    {
+                        await handler.ExecuteAsync(component, thread);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error executing component: {ComponentId}", component.Data.CustomId);
-                await component.RespondAsync("An error occurred while processing your component.", ephemeral:true);
-            }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error executing component: {ComponentId}", component.Data.CustomId);
+                    try { await component.RespondAsync("An error occurred.", ephemeral: true); } catch { }
+                }
+            });
         }
 
         public async Task StopAsync()

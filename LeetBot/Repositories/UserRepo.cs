@@ -112,6 +112,22 @@ namespace LeetBot.Repositories
             }
         }
 
+        public async Task UpdateUserCodeforcesAsync(IDiscordInteraction interaction, string handle, int rating, string rank)
+        {
+            var userId = TextProcessor.UserId(interaction.User.Id, interaction.GuildId);
+            var user = await _dbContext.Users.FindAsync(userId);
+
+            if (user != null)
+            {
+                user.CodeforcesHandle = handle;
+                user.CodeforcesRating = rating;
+                user.CodeforcesRank = rank;
+                user.CodeforcesVerifiedAt = DateTime.UtcNow;
+                _dbContext.Users.Update(user);
+                await SaveChangesAsync();
+            }
+        }
+
         public async Task<int> SaveChangesAsync()
         {
             return await _dbContext.SaveChangesAsync();

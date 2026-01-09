@@ -21,6 +21,7 @@ namespace LeetBot.Interfaces
         Task<List<User>> GetUsersByGuildIdAsync(ulong? guildId);
         Task<User?> GetUserByIdAsync(string id);
         Task UpdateUserLeetCodeUsernameAsync(IDiscordInteraction interaction, string newLeetCodeUsername);
+        Task UpdateUserCodeforcesAsync(IDiscordInteraction interaction, string handle, int rating, string rank);
         Task<int> SaveChangesAsync();
 
     }

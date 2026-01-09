@@ -36,7 +36,7 @@ namespace LeetBot
                 {
                     logging.ClearProviders();
                     logging.AddConsole();
-                    logging.SetMinimumLevel(LogLevel.Error);
+                    logging.SetMinimumLevel(LogLevel.Information);
                 })
                 .ConfigureServices((context, services) =>
                 {
