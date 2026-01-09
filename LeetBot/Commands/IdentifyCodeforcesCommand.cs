@@ -178,7 +178,8 @@ namespace LeetBot.Commands
 
         (int id, string index) ParseProblemId(string problemId)
         {
-            var match = System.Text.RegularExpressions.Regex.Match(problemId, @"^(\d+)([A-Z]\d*)$");
+            var match = System.Text.RegularExpressions.Regex.Match(problemId, @"^(\d+)/?([A-Z]\d*)$");
+
             return match.Success
                 ? (int.Parse(match.Groups[1].Value), match.Groups[2].Value)
                 : (0, string.Empty);
