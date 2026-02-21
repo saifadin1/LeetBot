@@ -36,7 +36,7 @@ you can try it out on the [LeetBot Discord Server](https://discord.gg/pVQehWMjC2
 
 ## ⚙️ Configuration
 
-LeetBot requires an `appsettings.json` file to run. Example:
+LeetBot requires an `appsettings.json` file to run. Example: 
 
 ```json
 {
